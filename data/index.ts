@@ -1,4 +1,7 @@
 import type { Problem } from '../types';
+import { vocabVerbProblems } from './vocab_verbs';
+import { vocabNounProblems } from './vocab_nouns';
+import { vocabAdjAdvProblems } from './vocab_adj_adv';
 import { futureProblems } from './01_future';
 import { gerundProblems } from './02_gerunds';
 import { infinitiveProblems } from './03_infinitives';
@@ -29,4 +32,7 @@ export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   '現在完了進行形': presentPerfectProgressiveProblems,
   '不定詞2': infinitive2Problems,
   'その他': otherProblems,
+  '英単語【動詞】': vocabVerbProblems,
+  '英単語【名詞】': vocabNounProblems,
+  '英単語【形容詞・副詞】': vocabAdjAdvProblems,
 };
