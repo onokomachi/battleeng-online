@@ -1,29 +1,10 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import type { ProblemCard, TurnPhase, ProblemViewRef, TurnInitiative } from '../types';
-import { generateBattleKeypadLayout } from '../utils/keypadLayoutGenerator';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { ProblemCard, TurnPhase, TurnInitiative } from '../types';
 import Card, { CardBack } from './Card';
 import GameLog from './GameLog';
-import AngleDiagramView from './AngleDiagramView';
-import BentTransversalDiagramView from './BentTransversalDiagramView';
-import FillInProofProblemView from './FillInProofProblemView';
 import DrawingCanvas from './DrawingCanvas';
 import { PencilIcon } from './Icons';
-import GraphingProblemView from './GraphingProblemView';
-import GraphingWithTableProblemView from './GraphingWithTableProblemView';
-import GraphToEquationProblemView from './GraphToEquationProblemView';
-import GraphWithDomainProblemView from './GraphWithDomainProblemView';
-import GraphProblemView from './GraphProblemView';
-import GuidedEquationProblemView from './GuidedEquationProblemView';
-import IntersectionGuidedEquationView from './IntersectionGuidedEquationView';
-import MultiTransversalAngleDiagramView from './MultiTransversalAngleDiagramView';
-import VerticalCalculationProblemView from './VerticalCalculationProblemView';
-import ProofProblemView from './ProofProblemView';
-import SimultaneousEquationProblemView from './SimultaneousEquationProblemView';
-import TriangleInParallelLinesView from './TriangleInParallelLinesView';
-import BoxPlotView from './BoxPlotView';
-import HistogramView from './HistogramView';
-import Keypad from './Keypad';
 
 
 // --- ProblemSolver Component ---

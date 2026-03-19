@@ -14,41 +14,89 @@ interface CardProps {
 }
 
 const categoryStyles: { [key: string]: { border: string, glow: string, header: string, accent: string } } = {
-  "式の計算": {
+  "未来": {
     border: 'border-blue-500/40',
     glow: 'shadow-blue-500/20',
     header: 'from-blue-900/60 to-transparent',
     accent: 'text-blue-300'
   },
-  "連立方程式": {
-    border: 'border-cyan-500/40',
-    glow: 'shadow-cyan-500/20',
-    header: 'from-cyan-900/60 to-transparent',
-    accent: 'text-cyan-300'
+  "動名詞": {
+    border: 'border-green-500/40',
+    glow: 'shadow-green-500/20',
+    header: 'from-green-900/60 to-transparent',
+    accent: 'text-green-300'
   },
-  "図形の性質": {
-    border: 'border-sky-400/40',
-    glow: 'shadow-sky-400/20',
-    header: 'from-sky-900/60 to-transparent',
-    accent: 'text-sky-200'
+  "不定詞": {
+    border: 'border-emerald-500/40',
+    glow: 'shadow-emerald-500/20',
+    header: 'from-emerald-900/60 to-transparent',
+    accent: 'text-emerald-300'
   },
-  "一次関数": {
-    border: 'border-indigo-500/40',
-    glow: 'shadow-indigo-500/20',
-    header: 'from-indigo-900/60 to-transparent',
-    accent: 'text-indigo-300'
+  "助動詞【must】": {
+    border: 'border-yellow-500/40',
+    glow: 'shadow-yellow-500/20',
+    header: 'from-yellow-900/60 to-transparent',
+    accent: 'text-yellow-300'
   },
-  "確率": {
+  "助動詞【have to】": {
+    border: 'border-amber-500/40',
+    glow: 'shadow-amber-500/20',
+    header: 'from-amber-900/60 to-transparent',
+    accent: 'text-amber-300'
+  },
+  "助動詞【その他】": {
+    border: 'border-orange-500/40',
+    glow: 'shadow-orange-500/20',
+    header: 'from-orange-900/60 to-transparent',
+    accent: 'text-orange-300'
+  },
+  "比較": {
+    border: 'border-purple-500/40',
+    glow: 'shadow-purple-500/20',
+    header: 'from-purple-900/60 to-transparent',
+    accent: 'text-purple-300'
+  },
+  "there is": {
+    border: 'border-pink-500/40',
+    glow: 'shadow-pink-500/20',
+    header: 'from-pink-900/60 to-transparent',
+    accent: 'text-pink-300'
+  },
+  "接続詞": {
     border: 'border-teal-500/40',
     glow: 'shadow-teal-500/20',
     header: 'from-teal-900/60 to-transparent',
     accent: 'text-teal-300'
   },
-  "データの活用": {
-    border: 'border-orange-500/40',
-    glow: 'shadow-orange-500/20',
-    header: 'from-orange-900/60 to-transparent',
-    accent: 'text-orange-300'
+  "受け身": {
+    border: 'border-red-500/40',
+    glow: 'shadow-red-500/20',
+    header: 'from-red-900/60 to-transparent',
+    accent: 'text-red-300'
+  },
+  "現在完了": {
+    border: 'border-cyan-500/40',
+    glow: 'shadow-cyan-500/20',
+    header: 'from-cyan-900/60 to-transparent',
+    accent: 'text-cyan-300'
+  },
+  "現在完了進行形": {
+    border: 'border-sky-500/40',
+    glow: 'shadow-sky-500/20',
+    header: 'from-sky-900/60 to-transparent',
+    accent: 'text-sky-300'
+  },
+  "不定詞2": {
+    border: 'border-indigo-500/40',
+    glow: 'shadow-indigo-500/20',
+    header: 'from-indigo-900/60 to-transparent',
+    accent: 'text-indigo-300'
+  },
+  "その他": {
+    border: 'border-slate-500/40',
+    glow: 'shadow-slate-500/20',
+    header: 'from-slate-800/60 to-transparent',
+    accent: 'text-slate-300'
   },
   "default": {
     border: 'border-slate-500/40',
@@ -73,20 +121,11 @@ const Card: React.FC<CardProps> = ({
   
   const styles = categoryStyles[card.mainCategory] || categoryStyles.default;
 
-  // 安全に問題文を取得する
+  // 問題文を取得する
   const getCardDisplayText = () => {
-    const data = card.problem?.data as any;
+    const data = card.problem?.data;
     if (!data) return "問題データなし";
-    
-    // プロパティ候補を順に探す
-    const text = data.question || data.questionText || data.assumption;
-    if (text) return text;
-
-    // 連立方程式などの場合は形式を表示
-    if (card.problem.type === 'simultaneous_equation') return "連立方程式を解け";
-    if (card.problem.type === 'graphing') return "グラフを作成せよ";
-    
-    return card.category || "数式を解析せよ";
+    return data.question || "問題文なし";
   };
 
   const cardClasses = `
@@ -108,7 +147,7 @@ const Card: React.FC<CardProps> = ({
       </div>
 
       <div className={`absolute top-0 left-0 right-0 p-3 text-center text-cyan-50 text-[10px] font-bold uppercase tracking-[0.3em] bg-gradient-to-b ${styles.header} border-b border-cyan-400/20`}>
-          {card.category}
+          {card.mainCategory}
       </div>
 
       <div className="flex-grow flex flex-col items-center justify-center text-center mt-6 px-1 relative z-10">
@@ -151,11 +190,11 @@ export const CardBack: React.FC = () => {
        <div className="w-full h-full border border-blue-400/20 rounded-lg flex items-center justify-center bg-slate-900/40 relative overflow-hidden">
             <div className="text-center z-10">
                 <h3 className="font-['Cinzel_Decorative'] font-bold text-2xl text-cyan-200 tracking-[0.25em] mb-1 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">
-                    MATH
+                    ENG
                 </h3>
                 <div className="h-[1px] w-20 bg-cyan-500/40 mx-auto my-2 shadow-[0_0_10px_cyan]"></div>
                 <h3 className="font-['Cinzel_Decorative'] font-bold text-[10px] text-cyan-400/60 tracking-[0.15em]">
-                    COSMIC_DECK
+                    BATTLE_DECK
                 </h3>
             </div>
             {/* Cyber Grid */}
