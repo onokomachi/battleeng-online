@@ -1,5 +1,5 @@
 /**
- * App.tsx - BattleMath Online v3.0
+ * App.tsx - BattleENG Online v3.0
  *
  * 統合機能:
  *  - Firebase Authentication (Google OAuth + Guest)  [エビデンスA: Firebase公式パターン]
@@ -823,9 +823,9 @@ const App: React.FC = () => {
     }, (error) => {
       const msg = error?.message || '';
       if (msg.includes('not found') || msg.includes('404') || error?.code === 'not-found') {
-        console.error('[BattleMath] Firestoreデータベースが未作成です');
+        console.error('[BattleENG] Firestoreデータベースが未作成です');
       } else {
-        console.error('[BattleMath] Room listener error:', msg);
+        console.error('[BattleENG] Room listener error:', msg);
       }
     });
   };
