@@ -239,7 +239,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
       <div className="text-center mb-8 md:mb-16 relative">
         <div className="absolute -inset-20 bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
         <h1 className="text-4xl sm:text-7xl md:text-9xl font-black text-hologram mb-4 tracking-[0.1em] sm:tracking-[0.2em]">
-          BATTLE-MATH
+          BATTLE-ENG
         </h1>
         <div className="flex items-center justify-center gap-6">
           <div className="h-[1px] w-20 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />

@@ -5,7 +5,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// battlemath-online Firebase project config (from Firebase console)
+// battleeng-online Firebase project config (from Firebase console)
 const firebaseConfig = {
   apiKey: "AIzaSyDfr022IMbBXCJT_wM2UCmZqexv-KKMtEM",
   authDomain: "battlemath-online.firebaseapp.com",
@@ -43,13 +43,13 @@ const checkFirestoreConnection = async (): Promise<boolean> => {
     const msg = e?.message || '';
     if (msg.includes('not found') || msg.includes('404') || e?.code === 'not-found') {
       console.error(
-        '%c[BattleMath] Firestoreデータベースが見つかりません。\n' +
+        '%c[BattleENG] Firestoreデータベースが見つかりません。\n' +
         'Firebase Console → Firestore Database → 「データベースを作成」を実行してください。\n' +
         'https://console.firebase.google.com/project/battlemath-online/firestore',
         'color: #ff6b6b; font-size: 14px; font-weight: bold;'
       );
     } else {
-      console.warn('[BattleMath] Firestore connectivity check failed:', msg);
+      console.warn('[BattleENG] Firestore connectivity check failed:', msg);
     }
     return false;
   }
@@ -57,7 +57,7 @@ const checkFirestoreConnection = async (): Promise<boolean> => {
 
 // Fire connectivity check (non-blocking)
 checkFirestoreConnection().then(ok => {
-  if (ok) console.log('[BattleMath] Firestore connected');
+  if (ok) console.log('[BattleENG] Firestore connected');
 });
 
 // Analytics - optional, should not block auth
