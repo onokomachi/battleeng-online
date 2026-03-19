@@ -32,10 +32,16 @@ import { indirectQuestionProblems } from './15_indirect_questions';
 import { conditionalProblems } from './16_conditionals';
 // ── 英単語 中1 ────────────────────────────────────────────
 import { vocabG1VerbProblems } from './vocab_g1_verbs';
+import { vocabG1NounProblems } from './vocab_g1_nouns';
+import { vocabG1AdjAdvProblems } from './vocab_g1_adj_adv';
 // ── 英単語 中2（既存ファイル） ─────────────────────────────
 import { vocabVerbProblems } from './vocab_verbs';
 import { vocabNounProblems } from './vocab_nouns';
 import { vocabAdjAdvProblems } from './vocab_adj_adv';
+// ── 英単語 中3 ────────────────────────────────────────────
+import { vocabG3VerbProblems } from './vocab_g3_verbs';
+import { vocabG3NounProblems } from './vocab_g3_nouns';
+import { vocabG3AdjAdvProblems } from './vocab_g3_adj_adv';
 
 export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   // ── 中学1年生 文法 ────────────────────────────────────────
@@ -71,8 +77,14 @@ export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   '仮定法': conditionalProblems,
   // ── 英単語 中1 ────────────────────────────────────────────
   '英単語【動詞】中1': vocabG1VerbProblems,
+  '英単語【名詞】中1': vocabG1NounProblems,
+  '英単語【形容詞・副詞】中1': vocabG1AdjAdvProblems,
   // ── 英単語 中2 ────────────────────────────────────────────
   '英単語【動詞】中2': vocabVerbProblems,
   '英単語【名詞】中2': vocabNounProblems,
   '英単語【形容詞・副詞】中2': vocabAdjAdvProblems,
+  // ── 英単語 中3 ────────────────────────────────────────────
+  '英単語【動詞】中3': vocabG3VerbProblems,
+  '英単語【名詞】中3': vocabG3NounProblems,
+  '英単語【形容詞・副詞】中3': vocabG3AdjAdvProblems,
 };
