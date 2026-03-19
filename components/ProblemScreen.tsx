@@ -1,33 +1,12 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import type { Problem, SessionStats, ProblemViewRef } from '../types';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { Problem, SessionStats } from '../types';
 import { getShuffledProblemSet } from '../services/problemService';
-import { difficultyMap, MATH_CATEGORIES } from '../constants';
+import { ENG_CATEGORIES } from '../constants';
 import DrawingCanvas from './DrawingCanvas';
-import Keypad from './Keypad';
 import ProblemControls from './ProblemControls';
 import ProblemResultDisplay from './ProblemResultDisplay';
-import { BackIcon, PencilIcon, HomeIcon, TrophyIcon, ClockIcon } from './Icons';
-import { generateSubtopicKeypadLayout } from '../utils/keypadLayoutGenerator';
-
-// Sub-views
-import AngleDiagramView from './AngleDiagramView';
-import BentTransversalDiagramView from './BentTransversalDiagramView';
-import FillInProofProblemView from './FillInProofProblemView';
-import GraphingProblemView from './GraphingProblemView';
-import GraphingWithTableProblemView from './GraphingWithTableProblemView';
-import GraphToEquationProblemView from './GraphToEquationProblemView';
-import GraphWithDomainProblemView from './GraphWithDomainProblemView';
-import GuidedEquationProblemView from './GuidedEquationProblemView';
-import IntersectionGuidedEquationView from './IntersectionGuidedEquationView';
-import MultiTransversalAngleDiagramView from './MultiTransversalAngleDiagramView';
-import VerticalCalculationProblemView from './VerticalCalculationProblemView';
-import ProofProblemView from './ProofProblemView';
-import SimultaneousEquationProblemView from './SimultaneousEquationProblemView';
-import TriangleInParallelLinesView from './TriangleInParallelLinesView';
-import GraphProblemView from './GraphProblemView';
-import BoxPlotView from './BoxPlotView';
-import HistogramView from './HistogramView';
+import { BackIcon, PencilIcon, HomeIcon } from './Icons';
 
 interface ProblemScreenProps {
   category: string;
@@ -161,8 +140,6 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
   const pausedTimeRef = useRef<number>(0);     // 一時停止した累計時間
   const pauseStartRef = useRef<number | null>(null); // 一時停止開始時刻
 
-  const problemViewRef = useRef<ProblemViewRef>(null);
-
   // 結果表示時にタイマーを一時停止
   useEffect(() => {
     if (showAnswer) {
@@ -193,7 +170,7 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
 
   // 現在の階層パスを取得
   const getHierarchyLabel = useCallback(() => {
-    const cat = MATH_CATEGORIES.find(c => c.name === category);
+    const cat = ENG_CATEGORIES.find(c => c.name === category);
     if (!cat) return category;
     const group = cat.groups.find(g => g.subtopics.includes(subTopic));
     return group ? `${category} / ${group.name}` : category;
@@ -207,9 +184,11 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
   }, [category, subTopic]);
 
   const currentProblem = problems[currentIndex] || null;
-  const isProof = currentProblem?.type === 'proof';
-  const problemData = currentProblem?.data as any;
   const problemHint = currentProblem?.data?.hint;
+
+  // Sort type state
+  const [sortWords, setSortWords] = useState<string[]>([]);
+  const [sortRemaining, setSortRemaining] = useState<string[]>([]);
 
   const handleNextProblem = useCallback(() => {
     if (currentIndex < problems.length - 1) {
@@ -226,31 +205,28 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
     }
   }, [currentIndex, problems.length]);
 
-  const checkAnswer = useCallback(() => {
+  const checkAnswerWithValue = useCallback((answerToCheck: string) => {
     if (!currentProblem || result !== null) return;
 
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
     setTimeTaken(duration);
 
-    if (isProof) {
-      setResult('proof');
-      setShowAnswer(true);
-      setSessionStats(prev => ({ ...prev, correct: prev.correct + 1, totalScore: prev.totalScore + 10, problemCount: prev.problemCount + 1 }));
-      return;
+    const normalizeStr = (s: string) =>
+      s.trim()
+        .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+        .toLowerCase();
+
+    let isCorrect: boolean;
+    if (currentProblem.type === 'sort') {
+      const correctAnswer = Array.isArray(currentProblem.answer)
+        ? currentProblem.answer.join(' ')
+        : String(currentProblem.answer);
+      isCorrect = normalizeStr(answerToCheck) === normalizeStr(correctAnswer);
+    } else {
+      const correctAnswer = String(currentProblem.answer);
+      isCorrect = normalizeStr(answerToCheck) === normalizeStr(correctAnswer);
     }
-
-    // Normalize power notation: ^N → superscript for all digits
-    const superscriptMap: Record<string, string> = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', 'n': 'ⁿ', 'm': 'ᵐ' };
-    const normalizePowers = (s: string) => s.replace(/\^([0-9+\-nm]+)/g, (_, digits: string) => digits.split('').map(c => superscriptMap[c] || c).join(''));
-    const normalizeAnswer = (s: string) => normalizePowers(s.trim().replace(/[°度]/g, '').replace(/pi/gi, 'π').replace(/\s+/g, ''));
-    const cleanUser = normalizeAnswer(userAnswer);
-    const cleanTarget = normalizeAnswer(currentProblem.answer);
-
-    // For multiple-choice questions, compare as sorted sets
-    const isCorrect = problemData?.multiple
-      ? cleanUser.split(',').sort().join(',') === cleanTarget.split(',').sort().join(',')
-      : cleanUser === cleanTarget;
 
     if (isCorrect) {
       setResult('correct');
@@ -273,66 +249,31 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
       }));
     }
     setShowAnswer(true);
-  }, [currentProblem, result, startTime, userAnswer, isProof]);
+  }, [currentProblem, result, startTime]);
 
-  const handleKeypadClick = useCallback((key: string) => {
-    if (showAnswer) return;
-    
-    const interactiveTypes = ['fill_in_proof', 'graphing', 'graphing_with_table', 'vertical_calculation', 'guided_equation', 'intersection_guided_equation', 'simultaneous_equation'];
-    if (interactiveTypes.includes(currentProblem?.type || '')) {
-       problemViewRef.current?.handleKeyClick(key);
-       return;
-    }
+  const checkAnswer = useCallback(() => {
+    checkAnswerWithValue(userAnswer);
+  }, [checkAnswerWithValue, userAnswer]);
 
-    if (key === 'BACKSPACE') {
-      setUserAnswer(prev => prev.slice(0, -1));
-    } else if (key === 'CLEAR') {
-      setUserAnswer('');
-    } else {
-      setUserAnswer(prev => prev + key);
-    }
-  }, [showAnswer, currentProblem]);
-
+  // Enter key → next problem when answer is showing
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showAnswer) {
-         if (e.key === 'Enter') handleNextProblem();
-         return;
-      }
-      // Avoid double input when typing in an <input> element
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      const keyMap: Record<string, string> = {
-        'Backspace': 'BACKSPACE',
-        'Escape': 'CLEAR',
-        'Delete': 'CLEAR',
-        '*': '×',
-        'p': 'π',
-        '^': '^',
-        'd': '°',
-        '<': '<',
-        '>': '>',
-      };
-
-      if (keyMap[e.key]) {
-        handleKeypadClick(keyMap[e.key]);
-      } else if (/^[0-9xya b=+\-/,().]$/.test(e.key)) {
-        handleKeypadClick(e.key);
-      } else if (e.key === 'Enter') {
-        if (userAnswer) checkAnswer();
-      }
+      if (showAnswer && e.key === 'Enter') handleNextProblem();
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeypadClick, showAnswer, handleNextProblem, checkAnswer, userAnswer]);
+  }, [showAnswer, handleNextProblem]);
 
-  // subtopic内の全問題から共通キーセットを生成（メモ化でセッション中は固定）
-  const subtopicKeypadLayout = useMemo(() => {
-    if (problems.length === 0) return [['0']];
-    const dominantType = problems[0]?.type || 'text';
-    return generateSubtopicKeypadLayout(problems, dominantType);
-  }, [problems]);
+  // Reset sort state when problem changes
+  useEffect(() => {
+    if (currentProblem?.type === 'sort' && currentProblem.data.options) {
+      setSortWords([]);
+      setSortRemaining([...currentProblem.data.options].sort(() => Math.random() - 0.5));
+    } else {
+      setSortWords([]);
+      setSortRemaining([]);
+    }
+  }, [currentProblem]);
 
   if (isLoading) {
     return (
@@ -403,146 +344,104 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
 
            <main className='grid lg:grid-cols-[1fr_220px] gap-3 lg:gap-4 flex-1 min-h-0 overflow-y-auto'>
               <div className='space-y-2 sm:space-y-3'>
-                <div className='w-full flex items-center justify-center bg-slate-950/40 rounded-xl p-3 sm:p-4 border border-cyan-500/5 shadow-inner relative overflow-y-auto max-h-[40vh] lg:max-h-[50vh]'>
-                    <div className="w-full">
-                    {currentProblem?.type === 'angle_diagram' && <AngleDiagramView data={problemData} userAnswer={userAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'bent_transversal_diagram' && <BentTransversalDiagramView data={problemData} userAnswer={userAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'fill_in_proof' && <FillInProofProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} submittedAnswer={userAnswer} correctAnswer={currentProblem.answer} />}
-                    {currentProblem?.type === 'graphing' && <GraphingProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} />}
-                    {currentProblem?.type === 'graphing_with_table' && <GraphingWithTableProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} />}
-                    {currentProblem?.type === 'graph_to_equation' && <GraphToEquationProblemView data={problemData} />}
-                    {currentProblem?.type === 'graph_with_domain' && <GraphWithDomainProblemView data={problemData} isVisualHintVisible={showAnswer} />}
-                    {currentProblem?.type === 'guided_equation' && <GuidedEquationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} submittedAnswer={userAnswer} correctAnswer={currentProblem.answer} />}
-                    {currentProblem?.type === 'intersection_guided_equation' && <IntersectionGuidedEquationView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} submittedAnswer={userAnswer} correctAnswer={currentProblem.answer} />}
-                    {currentProblem?.type === 'multi_transversal_angle' && <MultiTransversalAngleDiagramView data={problemData} userAnswer={userAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'vertical_calculation' && <VerticalCalculationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} submittedAnswer={userAnswer} correctAnswer={currentProblem.answer} />}
-                    {currentProblem?.type === 'proof' && <ProofProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'simultaneous_equation' && <SimultaneousEquationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setUserAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'triangle_in_parallel_lines' && <TriangleInParallelLinesView data={problemData} userAnswer={userAnswer} isSubmitted={showAnswer} />}
-                    {currentProblem?.type === 'box_plot' && (
-                      <div className="w-full text-center">
-                        <p className="text-base sm:text-lg lg:text-xl leading-snug mb-2 sm:mb-3 font-mono tracking-tight">{problemData?.question}</p>
-                        <BoxPlotView datasets={problemData?.datasets || []} hideValue={problemData?.hideValue} />
-                        {problemData?.options && (
-                          <div className="grid gap-2 max-w-lg mx-auto mt-2">
-                            {(problemData.options as string[]).map((opt: string, i: number) => {
-                              const isSelected = userAnswer === opt;
-                              return (
-                                <button key={i} onClick={() => { if (!showAnswer) setUserAnswer(opt); }} disabled={showAnswer}
-                                  className={`w-full text-left px-4 py-2.5 rounded-xl border-2 transition-all text-sm sm:text-base font-mono
-                                    ${isSelected ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50 hover:bg-slate-800/60'}
-                                    ${showAnswer ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                  <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {currentProblem?.type === 'histogram' && (
-                      <div className="w-full text-center">
-                        <p className="text-base sm:text-lg lg:text-xl leading-snug mb-2 sm:mb-3 font-mono tracking-tight">{problemData?.question}</p>
-                        <HistogramView bars={problemData?.bars || []} xLabel={problemData?.xLabel} yLabel={problemData?.yLabel} />
-                        {problemData?.options && (
-                          <div className="grid gap-2 max-w-lg mx-auto mt-2">
-                            {(problemData.options as string[]).map((opt: string, i: number) => {
-                              const isSelected = userAnswer === opt;
-                              return (
-                                <button key={i} onClick={() => { if (!showAnswer) setUserAnswer(opt); }} disabled={showAnswer}
-                                  className={`w-full text-left px-4 py-2.5 rounded-xl border-2 transition-all text-sm sm:text-base font-mono
-                                    ${isSelected ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50 hover:bg-slate-800/60'}
-                                    ${showAnswer ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                  <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {currentProblem?.type === 'graph_with_area' &&
-                        <div className="text-center w-full">
-                          <p className="text-sm sm:text-base lg:text-lg mb-2 font-mono">{problemData?.question || "面積を求めよ"}</p>
-                          <div className="w-full max-w-[200px] sm:max-w-[240px] mx-auto aspect-square">
-                            <GraphProblemView lines={problemData?.graphLines || []} polygon={problemData?.polygon} />
-                          </div>
-                        </div>
-                    }
-                    {(currentProblem?.type === 'text' || !currentProblem?.type) && (
-                      <div className="w-full text-center">
-                        <p className="text-base sm:text-lg lg:text-xl leading-snug mb-2 sm:mb-3 font-mono tracking-tight">{problemData?.question || problemData?.questionText || "問題文の解析に失敗しました"}</p>
-                        {problemData?.imageUrl && <img src={problemData.imageUrl} alt="DOC" className="max-w-full max-h-40 sm:max-h-52 mx-auto rounded-lg shadow-xl border border-cyan-500/10 p-1 bg-slate-900 mb-2" />}
-                        {problemData?.svg && (
-                          <div className="svg-container w-full max-w-xs mx-auto my-2 p-1.5 bg-slate-950 rounded-lg border border-cyan-500/10 max-h-[180px] sm:max-h-[220px] flex items-center justify-center" dangerouslySetInnerHTML={{ __html: problemData.svg }} />
-                        )}
-                        {problemData?.options && (
-                          <div className="grid gap-2 max-w-lg mx-auto mt-2">
-                            {(problemData.options as string[]).map((opt: string, i: number) => {
-                              const isSelected = problemData.multiple
-                                ? userAnswer.split(',').map((s: string) => s.trim()).includes(opt)
-                                : userAnswer === opt;
-                              return (
-                                <button
-                                  key={i}
-                                  onClick={() => {
-                                    if (showAnswer) return;
-                                    if (problemData.multiple) {
-                                      const current = userAnswer ? userAnswer.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-                                      if (current.includes(opt)) {
-                                        setUserAnswer(current.filter((s: string) => s !== opt).join(','));
-                                      } else {
-                                        setUserAnswer([...current, opt].join(','));
-                                      }
-                                    } else {
-                                      setUserAnswer(opt);
-                                    }
-                                  }}
-                                  disabled={showAnswer}
-                                  className={`w-full text-left px-4 py-2.5 rounded-xl border-2 transition-all text-sm sm:text-base font-mono
-                                    ${isSelected
-                                      ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200 shadow-[0_0_15px_rgba(34,211,238,0.2)]'
-                                      : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50 hover:bg-slate-800/60'}
-                                    ${showAnswer ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                                >
-                                  <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>
-                                  {opt}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    </div>
-                </div>
+                <div className='w-full bg-slate-950/40 rounded-xl p-3 sm:p-4 border border-cyan-500/5 shadow-inner overflow-y-auto max-h-[50vh] lg:max-h-[60vh]'>
+                  {/* Question text */}
+                  <p className="text-white text-base sm:text-lg lg:text-xl font-bold leading-relaxed mb-2 text-center">
+                    {currentProblem?.data.question || '問題文なし'}
+                  </p>
+                  {currentProblem?.data.japanese && (
+                    <p className="text-cyan-400/70 text-sm mb-4 text-center italic">{currentProblem.data.japanese}</p>
+                  )}
 
-                {!['proof'].includes(currentProblem?.type || '') && !problemData?.options && (
-                  <div className='flex flex-col items-center gap-2'>
-                    {!['fill_in_proof', 'graphing', 'graphing_with_table', 'vertical_calculation', 'guided_equation', 'intersection_guided_equation', 'simultaneous_equation'].includes(currentProblem?.type || '') && (
-                        <div className='w-full max-w-lg'>
-                           <div className={`min-h-[3rem] sm:min-h-[3.5rem] p-2 sm:p-3 bg-slate-950/60 rounded-xl border-2 border-cyan-500/30 flex items-center shadow-inner`}>
-                              <span className='text-xs sm:text-sm font-bold text-cyan-400 mr-2 sm:mr-3 whitespace-nowrap'>解答:</span>
-                              {(currentProblem?.type === 'text' || !currentProblem?.type) ? (
-                                <input
-                                  type="text"
-                                  value={userAnswer}
-                                  onChange={(e) => !showAnswer && setUserAnswer(e.target.value)}
-                                  disabled={showAnswer}
-                                  placeholder="ここに入力..."
-                                  className="flex-grow bg-transparent text-lg sm:text-xl lg:text-2xl font-mono text-cyan-200 font-bold tracking-wide outline-none placeholder:text-cyan-800 placeholder:text-sm"
-                                />
-                              ) : (
-                                <span className='text-lg sm:text-xl lg:text-2xl font-mono text-cyan-200 flex-grow font-bold tracking-wide' style={{ wordBreak: 'break-all' }}>{userAnswer || <span className="text-cyan-800 text-sm">キーパッドで入力...</span>}</span>
-                              )}
-                           </div>
-                        </div>
-                    )}
-                    <div className="w-full max-w-lg">
-                      <Keypad onKeyClick={handleKeypadClick} layout={subtopicKeypadLayout} disabled={showAnswer} />
+                  {/* select type */}
+                  {currentProblem?.type === 'select' && currentProblem.data.options && (
+                    <div className="grid gap-2 max-w-lg mx-auto mt-2">
+                      {currentProblem.data.options.map((opt: string, i: number) => (
+                        <button
+                          key={i}
+                          onClick={() => { if (!showAnswer) { setUserAnswer(opt); checkAnswerWithValue(opt); } }}
+                          disabled={showAnswer}
+                          className={`w-full text-left px-4 py-2.5 rounded-xl border-2 transition-all text-sm sm:text-base
+                            ${userAnswer === opt
+                              ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200'
+                              : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50 hover:bg-slate-800/60'}
+                            ${showAnswer ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* input type */}
+                  {currentProblem?.type === 'input' && (
+                    <div className="flex flex-col gap-2 max-w-lg mx-auto mt-2">
+                      <input
+                        type="text"
+                        value={userAnswer}
+                        onChange={(e) => { if (!showAnswer) setUserAnswer(e.target.value); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && userAnswer.trim() && !showAnswer) checkAnswerWithValue(userAnswer.trim()); }}
+                        disabled={showAnswer}
+                        placeholder="ここに入力..."
+                        autoFocus
+                        className="w-full bg-slate-950 border-2 border-cyan-500/30 rounded-xl px-4 py-3 text-white text-lg font-mono outline-none focus:border-cyan-400 placeholder:text-cyan-800 disabled:opacity-50"
+                      />
+                    </div>
+                  )}
+
+                  {/* sort type */}
+                  {currentProblem?.type === 'sort' && (
+                    <div className="flex flex-col gap-3 max-w-lg mx-auto mt-2">
+                      {/* Answer area */}
+                      <div className="min-h-[3rem] bg-slate-900/60 border-2 border-cyan-500/20 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                        {sortWords.length === 0 && (
+                          <span className="text-cyan-800 text-sm">単語をクリックして並べよう</span>
+                        )}
+                        {sortWords.map((word, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              if (showAnswer) return;
+                              const newWords = sortWords.filter((_, idx) => idx !== i);
+                              setSortWords(newWords);
+                              setSortRemaining(prev => [...prev, word]);
+                            }}
+                            disabled={showAnswer}
+                            className="px-3 py-1.5 bg-cyan-900/60 border border-cyan-400/40 text-cyan-200 rounded-lg text-sm font-bold hover:bg-red-900/40 hover:border-red-400/40 transition-all"
+                          >
+                            {word}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Word bank */}
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {sortRemaining.map((word, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              if (showAnswer) return;
+                              const newWords = [...sortWords, word];
+                              const newRemaining = sortRemaining.filter((_, idx) => idx !== i);
+                              setSortWords(newWords);
+                              setSortRemaining(newRemaining);
+                              if (newRemaining.length === 0) {
+                                const joined = newWords.join(' ');
+                                setUserAnswer(joined);
+                                checkAnswerWithValue(joined);
+                              }
+                            }}
+                            disabled={showAnswer}
+                            className="px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm font-bold hover:bg-cyan-900/40 hover:border-cyan-400/40 transition-all"
+                          >
+                            {word}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <ProblemResultDisplay
                   showAnswer={showAnswer}
@@ -557,7 +456,7 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
 
               <div className="flex flex-col gap-2 sm:gap-3">
                 <ProblemControls
-                  isProof={isProof}
+                  isProof={false}
                   isLoading={isLoading}
                   userAnswer={userAnswer}
                   result={result}

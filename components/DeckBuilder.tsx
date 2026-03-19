@@ -2,10 +2,10 @@
 import React, { useState, useMemo } from 'react';
 import type { ProblemCard, BattleFormat, SavedDeck } from '../types';
 import Card from './Card';
-import { DECK_SIZE, MAX_DUPLICATES, DECK_CONSTRAINTS, MATH_CATEGORIES } from '../constants';
+import { DECK_SIZE, MAX_DUPLICATES, DECK_CONSTRAINTS } from '../constants';
 import { BackIcon } from './Icons';
 
-const SAVED_DECKS_KEY = 'battlemath_saved_decks';
+const SAVED_DECKS_KEY = 'battleeng_saved_decks';
 const MAX_SAVED_DECKS = 10;
 
 type SortMode = 'category' | 'difficulty' | 'name';

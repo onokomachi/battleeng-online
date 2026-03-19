@@ -1,67 +1,44 @@
 
-import { ALL_PROBLEM_SETS } from '../data';
+import { ENGLISH_PROBLEMS } from '../data';
 import { Problem } from '../types';
-import { SVG_MAP } from '../data/svgDefinitions';
-import svgMap from '../data/geometrySvgMap';
-import { geometryProofFigures } from '../data/geometryProofFigures';
-
-// Merge all SVG maps (later entries override earlier ones)
-const ALL_SVG: Record<string, string> = { ...SVG_MAP, ...svgMap, ...geometryProofFigures };
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   return [...array].sort(() => Math.random() - 0.5);
 };
 
-/** Populate svg field from SVG maps when imageUrl matches */
-const enrichWithSvg = (problem: Problem): Problem => {
-  const data = problem.data as any;
-  if (data?.imageUrl && !data.svg && ALL_SVG[data.imageUrl]) {
-    return { ...problem, data: { ...data, svg: ALL_SVG[data.imageUrl] } };
-  }
-  return problem;
-};
-
 /**
- * 問題タイプに基づく最適出題数を決定する。
- * エビデンス: 認知負荷理論 (Sweller, 2011) - タスクの複雑さに応じた適切な量の設定
+ * Returns up to 10 shuffled problems for a given category and subTopic.
  *
- * - 証明・グラフ作成: 3問（高負荷タスク）
- * - 角度・図形問題: 4問（中負荷タスク）
- * - 計算・方程式: 5問（低〜中負荷タスク）
- */
-const getOptimalProblemCount = (problems: Problem[]): number => {
-  if (problems.length === 0) return 0;
-
-  // 問題タイプを集計して最も多いタイプで判定
-  const typeCounts: Record<string, number> = {};
-  for (const p of problems) {
-    typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
-  }
-  const dominantType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0][0];
-
-  const heavyTypes = ['proof', 'fill_in_proof', 'graphing', 'graphing_with_table'];
-  const mediumTypes = ['angle_diagram', 'bent_transversal_diagram', 'triangle_in_parallel_lines',
-    'multi_transversal_angle', 'graph_to_equation', 'graph_with_domain', 'graph_with_area'];
-
-  let count: number;
-  if (heavyTypes.includes(dominantType)) {
-    count = 3;
-  } else if (mediumTypes.includes(dominantType)) {
-    count = 4;
-  } else {
-    count = 5;
-  }
-
-  // 問題数が少ない場合はその数に制限
-  return Math.min(count, problems.length);
-};
-
-/**
- * 指定された分野と単元の問題セットをシャッフルし、最適な数に制限して返す。
+ * Grammar subtopics:
+ *   '選択式' → select, '記述式' → input, '並び替え' → sort
+ *
+ * Vocabulary subtopics (英単語【動詞】 / 英単語【名詞】 / 英単語【形容詞・副詞】):
+ *   '英→日（意味選択）' → select where question shows English word (no japanese field)
+ *   '日→英（単語選択）' → select where question shows Japanese meaning (has japanese field)
+ *   '日→英（単語入力）' → input
  */
 export const getShuffledProblemSet = (category: string, subTopic: string): Problem[] => {
-  const problemSet = ALL_PROBLEM_SETS[subTopic] || [];
-  const shuffled = shuffleArray(problemSet).map(enrichWithSvg);
-  const count = getOptimalProblemCount(shuffled);
-  return shuffled.slice(0, count);
+  const allForCategory = ENGLISH_PROBLEMS[category] || [];
+
+  let filtered: Problem[];
+
+  if (subTopic === '英→日（意味選択）') {
+    filtered = allForCategory.filter(p => p.type === 'select' && !p.data.japanese);
+  } else if (subTopic === '日→英（単語選択）') {
+    filtered = allForCategory.filter(p => p.type === 'select' && !!p.data.japanese);
+  } else if (subTopic === '日→英（単語入力）') {
+    filtered = allForCategory.filter(p => p.type === 'input');
+  } else {
+    const typeMap: Record<string, string> = {
+      '選択式': 'select',
+      '記述式': 'input',
+      '並び替え': 'sort',
+    };
+    const targetType = typeMap[subTopic];
+    filtered = targetType
+      ? allForCategory.filter(p => p.type === targetType)
+      : allForCategory;
+  }
+
+  return shuffleArray(filtered).slice(0, 10);
 };

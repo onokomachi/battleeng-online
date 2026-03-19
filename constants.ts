@@ -1,31 +1,19 @@
 
-import type { Problem, ProblemCard, Category, Ability, AbilityType, DailyQuestDef, BadgeDef, ShopItemDef } from './types';
-import { geometryProblems } from './data/geometryProblems';
-import { linearFunctionsProblems } from './data/linearFunctionsProblems';
-import { polynomialProblems } from './data/polynomialProblems';
-import { probabilityProblems } from './data/probabilityProblems';
-import { simultaneousEquationsProblems } from './data/simultaneousEquations';
-import { dataAnalysisProblems } from './data/dataAnalysisProblems';
-import { SVG_MAP } from './data/svgDefinitions';
-import svgMap from './data/geometrySvgMap';
-import { geometryProofFigures } from './data/geometryProofFigures';
-
-// Merge all SVG maps for enriching card problems with inline SVGs
-const ALL_SVG: Record<string, string> = { ...SVG_MAP, ...svgMap, ...geometryProofFigures };
+import type { Problem, ProblemCard, CategoryDef, EnglishCategory, Ability, AbilityType, DailyQuestDef, BadgeDef, ShopItemDef } from './types';
+import { ENGLISH_PROBLEMS } from './data/index';
 
 export const MAX_SCORE = 5;
 export const DECK_SIZE = 20;
 export const HAND_SIZE = 5;
 export const MAX_DUPLICATES = 2;
 
-// HP Battle System (aicardbattle2 integration)
+// HP Battle System
 // エビデンスA: Testing Effect (Roediger & Butler 2011) — 想起回数が学習効果に比例
-// HP40 + 新ダメージ式 → 平均7-8ラウンド/試合（旧: 2-3ラウンド）
+// HP40 + ダメージ式 → 平均7-8ラウンド/試合
 export const INITIAL_HP = 40;
 
 // Damage formula: difficulty × 1.5 + 1
-// Lv1=2.5→3, Lv2=4, Lv3=5.5→6, Lv4=7, Lv5=8.5→9
-// HP40 ÷ 平均5.5dmg ≈ 7.3ラウンド（学習量2-3倍に増加）
+// select(2)=4, input(3)=5.5→6, sort(4)=7
 export const calcDamage = (difficulty: number): number =>
   Math.round(difficulty * 1.5 + 1);
 
@@ -38,228 +26,285 @@ export const DECK_CONSTRAINTS: Record<number, number> = {
   5: 3,
 };
 
-// 要望に基づき、細かい単元を維持しつつ、学習目的別にグループ化して構造化
-export const MATH_CATEGORIES: Category[] = [
-    {
-        name: "式の計算",
-        groups: [
-            {
-                name: "基本と次数",
-                subtopics: ["式の次数", "同類項の加減(基)", "数値代入(基)"]
-            },
-            {
-                name: "加法・減法",
-                subtopics: ["同類項の加減(標1)", "同類項の加減(標2)", "(#+#)+(#+#)", "(#+#)-(#+#)", "(#+#)±#(#+#)", "縦書きの加法", "減法"]
-            },
-            {
-                name: "乗法・除法",
-                subtopics: ["式の乗法(基)", "式の乗法(標)", "式の二乗(基)", "式の三乗(基)", "式の除法(初1)", "式の除法(基1)", "式の除法(基2)", "式の除法(標1)", "式の除法(標2)"]
-            },
-            {
-                name: "分数・混合計算",
-                subtopics: ["分数式の加減(基礎)", "分数式の加減(標準1)", "分数式の加減(標準2)", "乗除の混合型1", "乗除の混合型2", "乗除の混合型3"]
-            },
-            {
-                name: "応用とまとめ",
-                subtopics: ["数値代入(標1)", "数値代入(標2)", "等式の変形(基)", "等式の変形(標1)", "等式の変形(標2)", "式の変形(完)", "文字式(完成1)", "文字式(完成2)", "文字式の値(完)"]
-            }
-        ]
-    },
-    {
-        name: "連立方程式",
-        groups: [
-            {
-                name: "計算の基本",
-                subtopics: ["加減法（ガイド付き）", "代入法（ガイド付き）", "加減法（計算練習）①", "代入法（計算練習）①"]
-            },
-            {
-                name: "複雑な計算",
-                subtopics: ["加減法（計算練習）②", "代入法（計算練習）②", "()付きの方程式", "分数係数の方程式", "小数係数の方程式", "連立方程式（統合）"]
-            },
-            {
-                name: "文章題演習",
-                subtopics: ["金銭問題(基)", "数の問題(基)", "割合(準備)", "割合(標準)", "濃度(準備)", "食塩濃度(標)", "速度(準備)", "速度問題(標1)", "速度問題(標2)", "速度問題(標3)"]
-            }
-        ]
-    },
-    {
-        name: "図形の性質",
-        groups: [
-            {
-                name: "角度の計算",
-                subtopics: ["角度 基礎", "平行線の錯角・同位角（基本）", "平行線と角①", "平行線と角②", "三角形と角(基)", "三角形と角(応)", "三角形と角（標）", "角度（基本）", "角度（応用）", "角度（応用2）", "二等辺三角形(角度)", "二等辺三角形(角度・応用)", "三・四角形(角度)", "多角形と角(基)", "多角形と角(標)", "多角形と角(基2)", "交差する三角形", "星形多角形の角度"]
-            },
-            {
-                name: "合同と証明の基礎",
-                subtopics: ["合同条件(基)", "合同の証明(基)", "合同の証明(標)", "二等辺三角形(準)", "直角三角形(準)"]
-            },
-            {
-                name: "図形の証明(発展)",
-                subtopics: ["二等辺三角形(証)", "直角三角形(証)", "正三角形(証)", "平行四辺形(証)", "三・四角形(証明)", "証明（応用）", "証明（EX）"]
-            },
-            {
-                name: "四角形の性質",
-                subtopics: ["四角形の性質(基)", "四角形の関係"]
-            }
-        ]
-    },
-    {
-        name: "一次関数",
-        groups: [
-            {
-                name: "グラフの作成",
-                subtopics: ["表からｸﾞﾗﾌを書く", "2点でｸﾞﾗﾌを書く", "2点でｸﾞﾗﾌを書く2", "切片と傾きで書く"]
-            },
-            {
-                name: "式の決定",
-                subtopics: ["切片を求める", "傾きを求める", "ｸﾞﾗﾌの式を求める", "ｸﾞﾗﾌから式1", "ｸﾞﾗﾌから式2", "ｸﾞﾗﾌから式3(発展)", "1点と傾きから(基)", "1点と切片から(基)", "2点から式を(基)", "1次関数の式1", "1次関数の式2", "1次関数の式3"]
-            },
-            {
-                name: "関数の特徴と応用",
-                subtopics: ["1次関数の変化の割合", "グラフの変域", "2直線の交点", "グラフと面積1", "グラフと面積2", "1次関数の利用(基)"]
-            }
-        ]
-    },
-    {
-        name: "確率",
-        groups: [
-            {
-                name: "基本演習",
-                subtopics: ["サイコロ1個の確率(基)", "1個の確率問題", "ボール1個の確率(基)"]
-            },
-            {
-                name: "2つの事象",
-                subtopics: ["サイコロ2個の確率(基)", "サイコロ2個の確率(標)", "サイコロ2個の確率(応)", "ボール2個の確率(標)"]
-            },
-            {
-                name: "数え上げと応用",
-                subtopics: ["樹形図に表す", "樹形図に表す(標)", "区別できない時"]
-            }
-        ]
-    },
-    {
-        name: "データの活用",
-        groups: [
-            {
-                name: "四分位数と箱ひげ図",
-                subtopics: ["四分位数(基)", "四分位範囲(基)", "箱ひげ図の読み取り(基)", "箱ひげ図の読み取り(標)"]
-            },
-            {
-                name: "データの分析",
-                subtopics: ["度数分布表(基)", "ヒストグラム(基)", "平均値・中央値(基)", "代表値の比較(標)"]
-            }
-        ]
-    }
+// 英語文法カテゴリ × 問題タイプ別に構造化（学年別）
+export const ENG_CATEGORIES: CategoryDef[] = [
+  // ── 中学1年生 文法 ──────────────────────────────────────
+  {
+    name: 'be動詞',
+    grade: 1,
+    groups: [{ name: 'am / is / are の肯定・否定・疑問', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '一般動詞',
+    grade: 1,
+    groups: [{ name: '一般動詞の肯定・否定・疑問', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '代名詞',
+    grade: 1,
+    groups: [{ name: '主格・目的格・所有格', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '名詞の複数形',
+    grade: 1,
+    groups: [{ name: '規則変化・不規則変化', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '現在進行形',
+    grade: 1,
+    groups: [{ name: 'be動詞 + -ing 形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '過去形',
+    grade: 1,
+    groups: [{ name: '規則動詞・不規則動詞の過去形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '過去進行形',
+    grade: 1,
+    groups: [{ name: 'was / were + -ing 形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '疑問詞',
+    grade: 1,
+    groups: [{ name: 'what / who / when / where / why / how', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '命令文',
+    grade: 1,
+    groups: [{ name: '肯定命令・否定命令・Let\'s', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '感嘆文',
+    grade: 1,
+    groups: [{ name: 'What a ...! / How ...!', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: 'there is',
+    grade: 1,
+    groups: [{ name: 'there is/are 構文', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  // ── 中学2年生 文法 ──────────────────────────────────────
+  {
+    name: '未来',
+    grade: 2,
+    groups: [{ name: 'will / be going to', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '動名詞',
+    grade: 2,
+    groups: [{ name: '動名詞の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '不定詞',
+    grade: 2,
+    groups: [{ name: '不定詞3用法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '助動詞【must】',
+    grade: 2,
+    groups: [{ name: 'must / have to', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '助動詞【have to】',
+    grade: 2,
+    groups: [{ name: 'have to の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '助動詞【その他】',
+    grade: 2,
+    groups: [{ name: 'can / may / should / shall', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '比較',
+    grade: 2,
+    groups: [{ name: '比較級・最上級・原級', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '接続詞',
+    grade: 2,
+    groups: [{ name: '接続詞の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '受け身',
+    grade: 2,
+    groups: [{ name: '受動態', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '現在完了',
+    grade: 2,
+    groups: [{ name: '現在完了の3用法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  // ── 中学3年生 文法 ──────────────────────────────────────
+  {
+    name: '現在完了進行形',
+    grade: 3,
+    groups: [{ name: '現在完了進行形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '不定詞2',
+    grade: 3,
+    groups: [{ name: '不定詞の発展', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: 'その他',
+    grade: 3,
+    groups: [{ name: 'その他の文法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '関係代名詞',
+    grade: 3,
+    groups: [{ name: 'who / which / that', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '分詞の後置修飾',
+    grade: 3,
+    groups: [{ name: '現在分詞・過去分詞', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '間接疑問文',
+    grade: 3,
+    groups: [{ name: '疑問詞 + 主語 + 動詞', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '仮定法',
+    grade: 3,
+    groups: [{ name: 'if / wish 仮定法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  // ── 英単語 中1 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中1',
+    grade: 1,
+    groups: [{
+      name: '動詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中1',
+    grade: 1,
+    groups: [{
+      name: '名詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中1',
+    grade: 1,
+    groups: [{
+      name: '形容詞・副詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  // ── 英単語 中2 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中2',
+    grade: 2,
+    groups: [{
+      name: '動詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中2',
+    grade: 2,
+    groups: [{
+      name: '名詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中2',
+    grade: 2,
+    groups: [{
+      name: '形容詞・副詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  // ── 英単語 中3 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中3',
+    grade: 3,
+    groups: [{
+      name: '動詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中3',
+    grade: 3,
+    groups: [{
+      name: '名詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中3',
+    grade: 3,
+    groups: [{
+      name: '形容詞・副詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
 ];
 
-export const difficultyMap: Record<string, number> = {
-    // --- 式の計算 ---
-    "式の次数": 1, "同類項の加減(基)": 1, "数値代入(基)": 1, "式の乗法(基)": 1, "式の二乗(基)": 1, "式の除法(初1)": 1,
-    "同類項の加減(標1)": 2, "(#+#)+(#+#)": 2, "(#+#)-(#+#)": 2, "数値代入(標1)": 2, "等式の変形(基)": 2, "式の除法(基1)": 2,
-    "縦書きの加法": 3, "減法": 3, "分数式の加減(基礎)": 3, "#(#+#)±#(#+#)": 3, "等式の変形(標1)": 3, "式の乗法(標)": 3, "式の除法(標1)": 3, "乗除の混合型1": 3,
-    "等式の変形(標2)": 4, "文字式(完成1)": 4, "文字式の値(完)": 4, "分数式の加減(標準1)": 4,
-    "式の変形(完)": 5, "文字式(完成2)": 5,
-
-    // --- 連立方程式 ---
-    "加減法（ガイド付き）": 2, "代入法（ガイド付き）": 2,
-    "加減法（計算練習）①": 3, "代入法（計算練習）①": 3, "()付きの方程式": 3,
-    "連立方程式（統合）": 4, "金銭問題(基)": 4, "数の問題(基)": 4, "割合(準備)": 4, "速度(準備)": 4,
-    "割合(標準)": 5, "食塩濃度(標)": 5, "速度問題(標3)": 5,
-
-    // --- 図形の性質 ---
-    "角度 基礎": 1, "平行線の錯角・同位角（基本）": 1, "三角形と角（基本）": 1, "合同条件(基)": 1,
-    "角度（基本）": 2, "二等辺三角形(角度)": 2, "二等辺三角形(角度・応用)": 3, "三・四角形(角度)": 2, "四角形の性質(基)": 2,
-    "多角形と角(基2)": 3, "交差する三角形": 3, "星形多角形の角度": 4,
-    "角度（応用）": 3, "合同の証明(基)": 3, "二等辺三角形(準)": 3, "四角形の関係": 3,
-    "二等辺三角形(証)": 4, "直角三角形(証)": 4, "正三角形(証)": 4, "平行四辺形(証)": 4,
-    "証明（応用）": 5, "証明（EX）": 5, "三・四角形(証明)": 5,
-
-    // --- 一次関数 ---
-    "表からｸﾞﾗﾌを書く": 2, "切片を求める": 2, "傾きを求める": 2,
-    "2点でｸﾞﾗﾌを書く": 3, "切片と傾きで書く": 3, "ｸﾞﾗﾌから式1": 3, "1次関数の変化の割合": 3,
-    "2直線の交点": 4, "グラフの変域": 4, "1次関数の利用(基)": 4,
-    "グラフと面積1": 5, "グラフと面積2": 5,
-
-    // --- 確率 ---
-    "サイコロ1個の確率(基)": 1, "ボール1個の確率(基)": 1,
-    "サイコロ2個の確率(基)": 2, "樹形図に表す": 3,
-    "サイコロ1個の確率(標)": 3, "カード1枚の確率(標)": 3,
-    "サイコロ2個の確率(標)": 4, "区別できない時": 4,
-    "サイコロ2個の確率(応)": 5,
-
-    // --- データの活用 ---
-    "四分位数(基)": 2, "四分位範囲(基)": 2, "度数分布表(基)": 2, "ヒストグラム(基)": 2,
-    "平均値・中央値(基)": 1, "箱ひげ図の読み取り(基)": 3,
-    "箱ひげ図の読み取り(標)": 4, "代表値の比較(標)": 4,
-};
-
-const getDifficulty = (category: string): number => {
-    return difficultyMap[category] || 3;
-};
-
 const ABILITIES: Ability[] = [
-    { type: 'DEFENSIVE_STANCE', description: '[防御] このラウンドで敗北しても失点しない。' },
-    { type: 'TIME_PRESSURE', value: 3, description: '[速攻] 相手の解答時間を3秒短縮する。' },
-    { type: 'SCORE_BOOST', value: 1, description: '[激励] このラウンドで勝利した場合、追加で1スコアを得る。' },
+  { type: 'DEFENSIVE_STANCE', description: '[防御] このラウンドで敗北しても失点しない。' },
+  { type: 'TIME_PRESSURE', value: 3, description: '[速攻] 相手の解答時間を3秒短縮する。' },
+  { type: 'SCORE_BOOST', value: 1, description: '[激励] このラウンドで勝利した場合、追加で1スコアを得る。' },
 ];
 
 const assignAbility = (card: ProblemCard): Ability | undefined => {
-    if (card.difficulty < 3) return undefined;
-    const abilityMap: { [key: string]: AbilityType[] } = {
-        "図形の性質": ['DEFENSIVE_STANCE'],
-        "確率": ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
-        "一次関数": ['TIME_PRESSURE', 'SCORE_BOOST'],
-        "連立方程式": ['TIME_PRESSURE'],
-        "式の計算": ['SCORE_BOOST'],
-        "データの活用": ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
-    };
-    const possibleTypes = abilityMap[card.mainCategory];
-    if (!possibleTypes) return undefined;
-    if (Math.random() < 0.25) {
-        const randomType = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-        return ABILITIES.find(a => a.type === randomType);
-    }
-    return undefined;
-}
+  // select(difficulty=2)はアビリティなし。input/sort のみ
+  if (card.difficulty < 3) return undefined;
+  const abilityMap: { [key: string]: AbilityType[] } = {
+    // 中1
+    'be動詞':         ['SCORE_BOOST'],
+    '一般動詞':       ['SCORE_BOOST'],
+    '現在進行形':     ['TIME_PRESSURE'],
+    '過去形':         ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
+    '過去進行形':     ['TIME_PRESSURE'],
+    // 中2
+    '受け身':         ['DEFENSIVE_STANCE'],
+    '現在完了':       ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
+    '現在完了進行形': ['TIME_PRESSURE'],
+    '比較':           ['TIME_PRESSURE', 'SCORE_BOOST'],
+    '不定詞':         ['SCORE_BOOST'],
+    '不定詞2':        ['SCORE_BOOST'],
+    '動名詞':         ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
+    '接続詞':         ['DEFENSIVE_STANCE'],
+    '未来':           ['SCORE_BOOST'],
+  };
+  const possibleTypes = abilityMap[card.mainCategory];
+  if (!possibleTypes) return undefined;
+  if (Math.random() < 0.25) {
+    const randomType = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+    return ABILITIES.find(a => a.type === randomType);
+  }
+  return undefined;
+};
 
 const processProblems = (): ProblemCard[] => {
-    const allProblems: ProblemCard[] = [];
-    let idCounter = 0;
-    const sets = [
-        { mainCat: "式の計算", problems: polynomialProblems },
-        { mainCat: "連立方程式", problems: simultaneousEquationsProblems },
-        { mainCat: "図形の性質", problems: geometryProblems },
-        { mainCat: "一次関数", problems: linearFunctionsProblems },
-        { mainCat: "確率", problems: probabilityProblems },
-        { mainCat: "データの活用", problems: dataAnalysisProblems },
-    ];
-    for (const set of sets) {
-        for (const category in set.problems) {
-            const difficulty = getDifficulty(category);
-            for (const problem of (set.problems as any)[category]) {
-                // Enrich with SVG: if problem has imageUrl but no svg, populate from SVG maps
-                const enriched = (() => {
-                    const p = problem as Problem;
-                    const data = p.data as any;
-                    if (data?.imageUrl && !data.svg && ALL_SVG[data.imageUrl]) {
-                        return { ...p, data: { ...data, svg: ALL_SVG[data.imageUrl] } };
-                    }
-                    return p;
-                })();
-                const card: ProblemCard = {
-                    id: idCounter++,
-                    mainCategory: set.mainCat,
-                    category,
-                    difficulty,
-                    problem: enriched,
-                };
-                card.ability = assignAbility(card);
-                allProblems.push(card);
-            }
-        }
+  const allProblems: ProblemCard[] = [];
+  let idCounter = 0;
+
+  for (const [mainCat, problems] of Object.entries(ENGLISH_PROBLEMS)) {
+    for (const problem of problems) {
+      // 難易度はモードで決定: select=2, input=3, sort=4
+      const difficulty = problem.type === 'select' ? 2 : problem.type === 'input' ? 3 : 4;
+      const card: ProblemCard = {
+        id: idCounter++,
+        mainCategory: mainCat as EnglishCategory,
+        category: problem.type,
+        difficulty,
+        problem,
+      };
+      card.ability = assignAbility(card);
+      allProblems.push(card);
     }
-    return allProblems;
-}
+  }
+  return allProblems;
+};
 
 export const CARD_DEFINITIONS: ProblemCard[] = processProblems();
 
@@ -301,14 +346,14 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: 'chain_5', title: '5連鎖', description: '5問連続正解した', icon: '⚡' },
   { id: 'chain_10', title: '10連鎖', description: '10問連続正解した', icon: '⚡⚡' },
   { id: 'chain_20', title: '20連鎖', description: '20問連続正解した', icon: '⚡⚡⚡' },
-  // --- 分野マスター ---
-  { id: 'master_polynomial', title: '式の計算マスター', description: '式の計算の正答率85%以上', icon: '📐' },
-  { id: 'master_equation', title: '連立方程式マスター', description: '連立方程式の正答率85%以上', icon: '📝' },
-  { id: 'master_geometry', title: '図形マスター', description: '図形の性質の正答率85%以上', icon: '📏' },
-  { id: 'master_function', title: '一次関数マスター', description: '一次関数の正答率85%以上', icon: '📈' },
-  { id: 'master_probability', title: '確率マスター', description: '確率の正答率85%以上', icon: '🎲' },
-  { id: 'master_data', title: 'データ活用マスター', description: 'データの活用の正答率85%以上', icon: '📊' },
-  { id: 'all_master', title: '全分野制覇', description: '全分野の正答率85%以上', icon: '🎓' },
+  // --- 文法マスター ---
+  { id: 'master_future', title: '未来形マスター', description: '未来形の正答率85%以上', icon: '🚀' },
+  { id: 'master_gerund', title: '動名詞マスター', description: '動名詞の正答率85%以上', icon: '📝' },
+  { id: 'master_infinitive', title: '不定詞マスター', description: '不定詞の正答率85%以上', icon: '✏️' },
+  { id: 'master_passive', title: '受け身マスター', description: '受け身の正答率85%以上', icon: '🛡️' },
+  { id: 'master_perfect', title: '現在完了マスター', description: '現在完了の正答率85%以上', icon: '⏰' },
+  { id: 'master_comparison', title: '比較マスター', description: '比較の正答率85%以上', icon: '⚖️' },
+  { id: 'all_master', title: '全文法制覇', description: '全カテゴリの正答率85%以上', icon: '🎓' },
   // --- コレクション ---
   { id: 'deck_full', title: 'フルデッキ', description: 'カードを50枚以上所持', icon: '🃏' },
   { id: 'shop_first', title: '初めての買い物', description: 'ショップで初購入', icon: '🛒' },
@@ -352,12 +397,12 @@ export const WEEKLY_QUEST_DEFS: DailyQuestDef[] = [
  */
 export const SHOP_ITEMS: ShopItemDef[] = [
   // 称号（プレイヤー名横に表示）
-  { id: 'title_beginner', name: '数学初心者', description: '最初の一歩を踏み出した証', cost: 500, icon: '🔰', type: 'title' },
+  { id: 'title_beginner', name: '英語初心者', description: '最初の一歩を踏み出した証', cost: 500, icon: '🔰', type: 'title' },
   { id: 'title_challenger', name: '挑戦者', description: '果敢に問題に挑む姿勢', cost: 1500, icon: '⚡', type: 'title' },
   { id: 'title_strategist', name: '戦略家', description: 'デッキ構築の達人', cost: 3000, icon: '🧠', type: 'title' },
-  { id: 'title_calculator', name: '計算の鬼', description: '計算速度に定評あり', cost: 5000, icon: '🔥', type: 'title' },
-  { id: 'title_master', name: '数学マスター', description: '全分野を制覇した者', cost: 10000, icon: '👑', type: 'title' },
-  { id: 'title_legend', name: '伝説の数学者', description: '最高峰の称号', cost: 25000, icon: '🌟', type: 'title' },
+  { id: 'title_speaker', name: '英語の鬼', description: '解答速度に定評あり', cost: 5000, icon: '🔥', type: 'title' },
+  { id: 'title_master', name: '英語マスター', description: '全文法を制覇した者', cost: 10000, icon: '👑', type: 'title' },
+  { id: 'title_legend', name: '伝説の英語使い', description: '最高峰の称号', cost: 25000, icon: '🌟', type: 'title' },
   // ストリークシールド（ログイン連続日数を1回保護）
   { id: 'streak_shield', name: 'ストリークシールド', description: 'ログイン途切れを1回だけ防ぐ', cost: 2000, icon: '🛡️', type: 'streak_shield' },
   // バトルテーマ

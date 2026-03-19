@@ -1,6 +1,6 @@
 import { LearningRecord } from '../types';
 
-const RECORDS_KEY = 'battleMathLearningRecords';
+const RECORDS_KEY = 'battleEngLearningRecords';
 
 export const getRecords = (): LearningRecord[] => {
     try {

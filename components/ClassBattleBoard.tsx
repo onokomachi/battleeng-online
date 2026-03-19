@@ -1,5 +1,5 @@
 /**
- * ClassBattleBoard.tsx — 月間クラス対抗ランキング「MATH WARS」
+ * ClassBattleBoard.tsx — 月間クラス対抗ランキング「ENG WARS」
  *
  * エビデンスベース設計:
  *   - エビデンスA: グループ内協力＋グループ間競争（Johnson et al. 1981, 122研究メタ分析, d=0.49）
@@ -218,7 +218,7 @@ const ClassBattleBoard: React.FC<ClassBattleBoardProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
-                <span className="text-amber-400">⚔</span> MATH WARS
+                <span className="text-amber-400">⚔</span> ENG WARS
               </h2>
               <p className="text-xs text-amber-400 mt-1 font-bold">
                 {getMonthLabel()} クラス対抗ランキング

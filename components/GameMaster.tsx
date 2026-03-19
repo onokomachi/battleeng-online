@@ -1,5 +1,5 @@
 /**
- * GameMaster.tsx - BattleMath Admin Panel
+ * GameMaster.tsx - BattleENG Admin Panel
  *
  * 管理機能:
  *  - ユーザー管理 (戦績/レベル確認・リセット・削除)

@@ -1,5 +1,5 @@
 /**
- * App.tsx - BattleMath Online v3.0
+ * App.tsx - BattleENG Online v3.0
  *
  * 統合機能:
  *  - Firebase Authentication (Google OAuth + Guest)  [エビデンスA: Firebase公式パターン]
@@ -823,9 +823,9 @@ const App: React.FC = () => {
     }, (error) => {
       const msg = error?.message || '';
       if (msg.includes('not found') || msg.includes('404') || error?.code === 'not-found') {
-        console.error('[BattleMath] Firestoreデータベースが未作成です');
+        console.error('[BattleENG] Firestoreデータベースが未作成です');
       } else {
-        console.error('[BattleMath] Room listener error:', msg);
+        console.error('[BattleENG] Room listener error:', msg);
       }
     });
   };
@@ -1026,11 +1026,10 @@ const App: React.FC = () => {
     // Proof problems are auto-correct (same as practice mode)
     // Multiple-choice: compare as sorted sets so answer order doesn't matter
     const problemData = pcPlayedCard.problem.data as any;
-    const correct = pcPlayedCard.problem.type === 'proof'
-      ? true
-      : problemData?.multiple
-        ? normalizeAnswer(answer).split(',').sort().join(',') === normalizeAnswer(pcPlayedCard.problem.answer).split(',').sort().join(',')
-        : normalizeAnswer(answer) === normalizeAnswer(pcPlayedCard.problem.answer);
+    const correctAnswerStr = Array.isArray(pcPlayedCard.problem.answer)
+      ? pcPlayedCard.problem.answer.join(' ')
+      : String(pcPlayedCard.problem.answer);
+    const correct = normalizeAnswer(answer) === normalizeAnswer(correctAnswerStr);
 
     if (correct) {
       // Update DDA stats
@@ -1044,7 +1043,7 @@ const App: React.FC = () => {
     }
 
     // ゲーミフィケーション: チェイン・バッジ・クエスト更新
-    onCorrectAnswerEvent(correct, pcPlayedCard.problem.answer);
+    onCorrectAnswerEvent(correct, correctAnswerStr);
 
     // メタ認知: カテゴリ別正答率を記録（エビデンスA: Wang et al. 1993, ES=0.69）
     recordAttempt(pcPlayedCard.category, correct);
@@ -1058,7 +1057,7 @@ const App: React.FC = () => {
       addIncorrectToSrs(
         pcPlayedCard.category,
         String(qData.question || '').slice(0, 50),
-        pcPlayedCard.problem.answer,
+        correctAnswerStr,
         pcPlayedCard.problem.type
       );
     } else {
