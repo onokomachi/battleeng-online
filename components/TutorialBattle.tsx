@@ -26,7 +26,7 @@ interface TutorialStep {
 const STEPS: TutorialStep[] = [
   {
     title: 'バトルマスへようこそ！',
-    description: 'このゲームでは数学の問題を解いてバトルします。\n正解すると相手にダメージ、不正解だと自分がダメージを受けます。',
+    description: 'このゲームでは英語の問題を解いてバトルします。\n正解すると相手にダメージ、不正解だと自分がダメージを受けます。',
     highlight: 'concept',
   },
   {
@@ -38,9 +38,9 @@ const STEPS: TutorialStep[] = [
     title: '問題を解こう',
     description: '選んだカードの問題が出題されます。\n制限時間内に正解を入力しましょう！',
     highlight: 'problem',
-    question: '3 + 5 = ?',
-    answer: '8',
-    hint: '足し算です。3と5を合わせると…',
+    question: 'I want ( ) play tennis. 空欄に入る語は？',
+    answer: 'to',
+    hint: '「〜したい」= want to 〜 です。',
   },
   {
     title: '正解！ダメージを与えた！',
@@ -51,9 +51,9 @@ const STEPS: TutorialStep[] = [
     title: 'もう一問やってみよう',
     description: '今度は少し難しい問題です。\n不正解でも大丈夫 — 間違えた問題は自動で復習キューに入ります。',
     highlight: 'problem',
-    question: '2x + 3 = 11 のとき x = ?',
-    answer: '4',
-    hint: '両辺から3を引いて、2で割ると…',
+    question: 'She ( ) swimming every day. 空欄に入る語は？',
+    answer: 'enjoys',
+    hint: 'enjoy の後は動名詞（〜ing）です。主語が三人称単数なので…',
   },
   {
     title: 'チュートリアル完了！',

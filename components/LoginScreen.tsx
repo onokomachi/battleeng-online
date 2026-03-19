@@ -163,7 +163,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       <div className="text-center mb-16 relative">
         <div className="absolute -inset-20 bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
         <h1 className="text-7xl md:text-9xl font-black text-hologram mb-4 tracking-[0.2em]">
-          BATTLE-MATH
+          BATTLE-ENG
         </h1>
         <div className="flex items-center justify-center gap-6 mb-2">
           <div className="h-[1px] w-20 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
@@ -173,7 +173,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           <div className="h-[1px] w-20 bg-gradient-to-l from-transparent via-cyan-500 to-transparent" />
         </div>
         <p className="text-xs text-cyan-500/60 font-mono tracking-widest">
-          数学でバトル。全国のプレイヤーと対戦せよ。
+          英語でバトル。全国のプレイヤーと対戦せよ。
         </p>
       </div>
 
