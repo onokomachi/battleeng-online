@@ -16,6 +16,10 @@ import { presentPerfectProblems } from './09_present_perfect';
 import { presentPerfectProgressiveProblems } from './10_present_perfect_progressive';
 import { infinitive2Problems } from './11_infinitives_2';
 import { otherProblems } from './12_others';
+import { relativePronounProblems } from './13_relative_pronouns';
+import { participleProblems } from './14_participles';
+import { indirectQuestionProblems } from './15_indirect_questions';
+import { conditionalProblems } from './16_conditionals';
 
 export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   '未来': futureProblems,
@@ -35,4 +39,8 @@ export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   '英単語【動詞】': vocabVerbProblems,
   '英単語【名詞】': vocabNounProblems,
   '英単語【形容詞・副詞】': vocabAdjAdvProblems,
+  '関係代名詞': relativePronounProblems,
+  '分詞の後置修飾': participleProblems,
+  '間接疑問文': indirectQuestionProblems,
+  '仮定法': conditionalProblems,
 };

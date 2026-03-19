@@ -106,6 +106,23 @@ export const ENG_CATEGORIES: CategoryDef[] = [
       subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
     }],
   },
+  // ── 中学3年生 文法 ──────────────────────────────────────
+  {
+    name: '関係代名詞',
+    groups: [{ name: 'who / which / that', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '分詞の後置修飾',
+    groups: [{ name: '現在分詞・過去分詞', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '間接疑問文',
+    groups: [{ name: '疑問詞 + 主語 + 動詞', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '仮定法',
+    groups: [{ name: 'if / wish 仮定法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
 ];
 
 const ABILITIES: Ability[] = [
