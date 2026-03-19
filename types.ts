@@ -1,191 +1,24 @@
 
-// types.ts
+// types.ts - BattleENG Online (英語カードバトル)
 
-// --- Graphing Problem Types ---
-export interface VisualHint {
-  type: 'highlight-rect';
-  x_range: [number, number];
-  y_range: [number, number];
-  color: 'blue' | 'green' | 'red';
-}
+// --- English Question Types ---
+export type QuestionType = 'select' | 'input' | 'sort';
 
-export interface GraphLineData {
-    m: number;
-    c: number;
-    color?: string;
-    label?: string;
-}
-
-export interface GraphPolygonData {
-    points: {x: number, y: number}[];
-    color?: string;
-}
-
-export interface GraphingProblemData {
-  question: string;
-}
-
-export interface GraphingWithTableProblemData {
-    question: string;
-    equation: string;
-    table: {x: number, y: number}[];
-}
-
-export interface GraphToEquationProblemData {
-    question: string;
-    points: {x: number, y: number}[];
-}
-
-export interface GraphWithDomainProblemData {
-    question: string;
-    equation: {m: number, c: number};
-    x_range: [number, number];
-    visualHints: VisualHint[];
-    keypadLayout?: string[][];
-}
-
-export interface GraphWithAreaProblemData {
-    question: string;
-    graphLines: GraphLineData[];
-    polygon: GraphPolygonData;
-    keypadLayout?: string[][];
-}
-
-
-// --- New Problem Data Types ---
-export interface VerticalCalculationData {
-    operator: '+' | '-';
-    lines: [string, string];
-    question: string;
-}
-
-export interface ProofProblemData {
-    assumption: string;
-    conclusion: string;
-    imageUrl?: string;
-    svg?: string;
-}
-
-export interface SimultaneousEquationData {
-    eq1: { a: number, b: number, c: number };
-    eq2: { a: number, b: number, c: number };
-}
-
-export interface AngleData {
-    value: number | string;
-    position: 'base_left' | 'base_right' | 'base_right_exterior' | 'top_vertex' | 'top_exterior_left' | 'top_exterior_right';
-}
-
-export interface TriangleInParallelLinesData {
-    angles: AngleData[];
-    unknown: { label: string; position: 'base_left' | 'base_right' | 'top_vertex' };
-    questionText?: string;
-}
-
-export interface Transversal {
-    p1: { x: number, y: number };
-    p2: { x: number, y: number };
-}
-export interface AngleInfo {
-    value: string;
-    transversalIndex: number;
-    parallelLineIndex: number;
-    position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-    isUnknown: boolean;
-    isIntersectionAngle?: boolean;
-}
-export interface MultiTransversalAngleData {
-    parallelLines: { y: number, label: string }[];
-    transversals: Transversal[];
-    angles: AngleInfo[];
-    questionText?: string;
-}
-
-// AngleDiagram
-export interface Angle {
-    position: number;
-    value: number;
-    name: string;
-}
-export interface AngleDiagramData {
-    config: {
-        known: Omit<Angle, 'name'>[];
-        unknown: Omit<Angle, 'value'>;
-    };
-    question: string;
-}
-
-// BentTransversal
-export interface BentAngle {
-    value: number | string;
-    placement: string; // 'interior_left', 'exterior_right', etc.
-}
-export interface BentTransversalDiagramData {
-    topAngle: BentAngle;
-    bottomAngle: BentAngle;
-    unknownAngle: { label: string };
-    question: string;
-}
-
-// FillInProof
-export type ProofPart = string | null | { options: string[] };
-export interface ProofStep {
-    parts: ProofPart[];
-}
-export interface FillInProofProblemData {
-    question: string;
-    steps: ProofStep[];
-    imageUrl?: string;
-    svg?: string;
-}
-
-// GuidedEquation
-export interface GuidedEquationData {
-    question?: string;
-    initial_equations?: [string, string];
-    steps: { parts: (string | null)[] }[];
-    final_answer_prompt?: string;
-    hint?: string | string[];
-}
-
-// IntersectionGuidedEquation
-export interface IntersectionGuidedEquationData {
-    question: string;
-    graphLines: GraphLineData[];
-    guidedEquation: GuidedEquationData;
-}
-
-
-// --- Data Analysis Problem Types ---
-export interface BoxPlotDataDef {
-  min: number;
-  q1: number;
-  median: number;
-  q3: number;
-  max: number;
-  label?: string;
-}
-
-export interface BoxPlotProblemData {
-  question: string;
-  datasets: BoxPlotDataDef[];
-  hideValue?: string;
-  options?: string[];
-}
-
-export interface HistogramBarDef {
-  from: number;
-  to: number;
-  freq: number;
-}
-
-export interface HistogramProblemData {
-  question: string;
-  bars: HistogramBarDef[];
-  xLabel?: string;
-  yLabel?: string;
-  options?: string[];
-}
+export type EnglishCategory =
+  | '未来'
+  | '動名詞'
+  | '不定詞'
+  | '助動詞【must】'
+  | '助動詞【have to】'
+  | '助動詞【その他】'
+  | '比較'
+  | 'there is'
+  | '接続詞'
+  | '受け身'
+  | '現在完了'
+  | '現在完了進行形'
+  | '不定詞2'
+  | 'その他';
 
 // --- Student Profile (学年・組・番号) ---
 export interface StudentProfile {
@@ -218,7 +51,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
-  mathPoints: number;
+  engPoints: number;        // mathPoints → engPoints
   playerLevel: number;
   playerExp: number;
   totalWins: number;
@@ -291,41 +124,25 @@ export interface Ability {
   description: string;
 }
 
-// The user's data structure
+// 英語問題データ構造
 export interface Problem {
-  type: string;
+  type: QuestionType;
   data: {
     question: string;
-    // other fields like svg, options, hint might exist
-    [key: string]: any;
-  } | AngleDiagramData 
-    | BentTransversalDiagramData 
-    | FillInProofProblemData
-    | GraphingProblemData
-    | GraphingWithTableProblemData
-    | GraphToEquationProblemData
-    | GraphWithDomainProblemData
-    | GraphWithAreaProblemData
-    | GuidedEquationData
-    | IntersectionGuidedEquationData
-    | VerticalCalculationData
-    | ProofProblemData
-    | SimultaneousEquationData
-    | TriangleInParallelLinesData
-    | MultiTransversalAngleData
-    | BoxPlotProblemData
-    | HistogramProblemData;
-  answer: string;
+    japanese?: string;       // 和訳ヒント
+    options?: string[];      // select/sort で使用する選択肢
+  };
+  answer: string | string[]; // select/input は string, sort は string[]
 }
 
 export type ProblemSet = Record<string, Problem[]>;
 
-// Replaces the old CardData
+// カードデータ（バトル用）
 export interface ProblemCard {
   id: number;
-  mainCategory: string; // "式の計算", "図形の性質", etc.
-  category: string; // The sub-topic like "式の次数"
-  difficulty: number; // e.g., 1, 2, 3
+  mainCategory: EnglishCategory; // "未来", "受け身" 等の文法カテゴリ
+  category: string;              // サブ分類（問題タイプ: "select"/"input"/"sort"）
+  difficulty: number;            // select=2, input=3, sort=4
   problem: Problem;
   ability?: Ability;
 }
@@ -334,17 +151,12 @@ export type TurnPhase = 'selecting_card' | 'solving_problem' | 'round_end' | 'ga
 export type GameState = 'login_screen' | 'main_menu' | 'deck_building' | 'in_game' | 'end' | 'practice_mode' | 'card_shop' | 'matchmaking' | 'gamemaster' | 'tutorial';
 export type TurnInitiative = 'player' | 'pc';
 
-// For FillInProofProblemView to connect with a virtual keypad in the future
-export interface ProblemViewRef {
-    handleKeyClick: (key: string) => void;
-}
-
 // --- Practice Mode Types ---
 export interface SubCategoryGroup {
     name: string;
     subtopics: string[];
 }
-export interface Category {
+export interface CategoryDef {
     name: string;
     groups: SubCategoryGroup[];
 }
