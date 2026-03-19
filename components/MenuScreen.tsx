@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Category, SubCategoryGroup } from '../types';
-import { MATH_CATEGORIES } from '../constants';
+import type { CategoryDef, SubCategoryGroup } from '../types';
+import { ENG_CATEGORIES } from '../constants';
 import { ArchiveIcon, TrophyIcon } from './Icons';
 import type { Firestore } from 'firebase/firestore';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -104,7 +104,7 @@ const TopicRankingModal: React.FC<{
 };
 
 const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords, onExit, db }) => {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(MATH_CATEGORIES[0]);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryDef | null>(ENG_CATEGORIES[0]);
   const [rankingTopic, setRankingTopic] = useState<string | null>(null);
 
   return (
@@ -127,7 +127,7 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords
         {/* Left Side: Category Selection */}
         <div className="w-full md:w-1/4 bg-slate-950/60 border-b md:border-b-0 md:border-r border-cyan-500/10 flex md:flex-col p-3 sm:p-4 md:p-6 gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible md:overflow-y-auto flex-shrink-0">
           <h2 className="text-xs font-bold text-cyan-400 mb-1 md:mb-2 hidden md:block">分野を選択</h2>
-          {MATH_CATEGORIES.map((cat) => (
+          {ENG_CATEGORIES.map((cat) => (
             <button
               key={cat.name}
               onClick={() => setSelectedCategory(cat)}

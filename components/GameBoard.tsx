@@ -16,238 +16,159 @@ interface ProblemSolverProps {
 }
 
 const ProblemSolver: React.FC<ProblemSolverProps> = ({ problemCard, onAnswerSubmit, isSolving, turnPhase }) => {
-  const [answer, setAnswer] = useState('');
-  const problemViewRef = useRef<ProblemViewRef>(null);
-
-  useEffect(() => {
-    if (isSolving) {
-      setAnswer('');
-    }
-  }, [isSolving, problemCard]);
-
-  const handleSubmit = useCallback((e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const autoAnswerTypes = ['graphing', 'graphing_with_table', 'proof', 'guided_equation', 'intersection_guided_equation', 'simultaneous_equation', 'vertical_calculation', 'fill_in_proof'];
-    if (answer.trim() || autoAnswerTypes.includes(problemCard.problem.type)) {
-      onAnswerSubmit(answer.trim());
-    }
-  }, [answer, onAnswerSubmit, problemCard]);
-
-  const handleKeypadClick = useCallback((key: string) => {
-    if (!isSolving || turnPhase !== 'solving_problem') return;
-    
-    const problemType = problemCard?.problem?.type;
-    const interactiveTypes = ['fill_in_proof', 'graphing', 'graphing_with_table', 'vertical_calculation', 'guided_equation', 'simultaneous_equation', 'intersection_guided_equation', 'proof'];
-
-    if (interactiveTypes.includes(problemType)) {
-       problemViewRef.current?.handleKeyClick(key);
-       return;
-    }
-
-    if (key === 'BACKSPACE') {
-      setAnswer(prev => prev.slice(0, -1));
-    } else if (key === 'CLEAR') {
-      setAnswer('');
-    } else {
-      setAnswer(prev => prev + key);
-    }
-  }, [isSolving, turnPhase, problemCard]);
-
-  // Physical keyboard support for Battle Mode
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isSolving || turnPhase !== 'solving_problem') return;
-      // Avoid double input when typing in an <input> element
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      const keyMap: Record<string, string> = {
-        'Backspace': 'BACKSPACE',
-        'Escape': 'CLEAR',
-        'Delete': 'CLEAR',
-        '*': '×',
-        'p': 'π',
-        '^': '^',
-        'd': '°',
-        '<': '<',
-        '>': '>',
-      };
-
-      if (keyMap[e.key]) {
-        handleKeypadClick(keyMap[e.key]);
-      } else if (/^[0-9xya b=+\-/,().]$/.test(e.key)) {
-        handleKeypadClick(e.key);
-      } else if (e.key === 'Enter') {
-        handleSubmit();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeypadClick, isSolving, turnPhase, handleSubmit]);
-
-  // バトルモード用: 個別問題の正解から動的にキーセットを生成（デコイ多め）
-  const battleKeypadLayout = useMemo(() => {
-    return generateBattleKeypadLayout(problemCard.problem);
-  }, [problemCard]);
+  const [inputAnswer, setInputAnswer] = useState('');
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [remainingWords, setRemainingWords] = useState<string[]>([]);
 
   const problemType = problemCard.problem.type;
-  const problemData = problemCard.problem.data as any;
+  const problemData = problemCard.problem.data;
+  const isDisabled = turnPhase !== 'solving_problem';
+
+  // Reset state when problem changes
+  useEffect(() => {
+    setInputAnswer('');
+    setSelectedWords([]);
+    if (problemType === 'sort' && problemData.options) {
+      // Shuffle options for display
+      setRemainingWords([...problemData.options].sort(() => Math.random() - 0.5));
+    } else {
+      setRemainingWords([]);
+    }
+  }, [problemCard, problemType]);
+
+  // Enter key support for input type
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isSolving || isDisabled) return;
+      if (e.key === 'Enter' && problemType === 'input' && inputAnswer.trim()) {
+        onAnswerSubmit(inputAnswer.trim());
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSolving, isDisabled, problemType, inputAnswer, onAnswerSubmit]);
+
+  const handleWordClick = (word: string, index: number) => {
+    if (isDisabled) return;
+    const newSelected = [...selectedWords, word];
+    const newRemaining = remainingWords.filter((_, i) => i !== index);
+    setSelectedWords(newSelected);
+    setRemainingWords(newRemaining);
+    // Auto-submit when all words placed
+    if (newRemaining.length === 0) {
+      onAnswerSubmit(newSelected.join(' '));
+    }
+  };
+
+  const handleSelectedWordClick = (word: string, index: number) => {
+    if (isDisabled) return;
+    const newSelected = selectedWords.filter((_, i) => i !== index);
+    setSelectedWords(newSelected);
+    setRemainingWords([...remainingWords, word]);
+  };
 
   return (
     <div className="w-full max-w-4xl bg-slate-950/80 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl p-3 sm:p-5 md:p-8 flex flex-col items-center shadow-[0_0_80px_rgba(0,0,0,0.8)] relative overflow-y-auto max-h-[75vh] sm:max-h-[80vh]">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
       <h3 className="text-cyan-400 font-bold text-sm mb-4">問題を解こう</h3>
 
-      <div className="w-full">
-      {problemType === 'angle_diagram' && <AngleDiagramView data={problemData} userAnswer={answer} isSubmitted={false} />}
-      {problemType === 'bent_transversal_diagram' && <BentTransversalDiagramView data={problemData} userAnswer={answer} isSubmitted={false} />}
-      {problemType === 'fill_in_proof' && <FillInProofProblemView data={problemData} onAnswerChange={setAnswer} isSubmitted={false} submittedAnswer="" correctAnswer={problemCard.problem.answer} ref={problemViewRef} />}
-      {problemType === 'graphing' && <GraphingProblemView data={problemData} onAnswerChange={setAnswer} ref={problemViewRef} />}
-      {problemType === 'graphing_with_table' && <GraphingWithTableProblemView data={problemData} onAnswerChange={setAnswer} ref={problemViewRef} />}
-      {problemType === 'graph_to_equation' && <GraphToEquationProblemView data={problemData} />}
-      {problemType === 'graph_with_domain' && <GraphWithDomainProblemView data={problemData} isVisualHintVisible={false} />}
-      {problemType === 'guided_equation' && <GuidedEquationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setAnswer} isSubmitted={false} submittedAnswer={answer} correctAnswer={problemCard.problem.answer} />}
-      {problemType === 'intersection_guided_equation' && <IntersectionGuidedEquationView ref={problemViewRef} data={problemData} onAnswerChange={setAnswer} isSubmitted={false} submittedAnswer={answer} correctAnswer={problemCard.problem.answer} />}
-      {problemType === 'multi_transversal_angle' && <MultiTransversalAngleDiagramView data={problemData} userAnswer={answer} isSubmitted={false} />}
-      {problemType === 'vertical_calculation' && <VerticalCalculationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setAnswer} isSubmitted={false} submittedAnswer={answer} correctAnswer={problemCard.problem.answer} />}
-      {problemType === 'proof' && <ProofProblemView ref={problemViewRef} data={problemData} onAnswerChange={setAnswer} isSubmitted={false} />}
-      {problemType === 'simultaneous_equation' && <SimultaneousEquationProblemView ref={problemViewRef} data={problemData} onAnswerChange={setAnswer} isSubmitted={false} />}
-      {problemType === 'triangle_in_parallel_lines' && <TriangleInParallelLinesView data={problemData} userAnswer={answer} isSubmitted={false} />}
-      {problemType === 'box_plot' && (
-        <div className="w-full text-center">
-          <p className="text-base sm:text-xl md:text-2xl mb-2 sm:mb-4 font-mono">{problemData?.question}</p>
-          <BoxPlotView datasets={problemData?.datasets || []} hideValue={problemData?.hideValue} />
-          {problemData?.options && (
-            <div className="grid gap-2 w-full max-w-lg mt-4 text-lg">
-              {(problemData.options as string[]).map((opt: string, i: number) => {
-                const isSelected = answer === opt;
-                return (
-                  <button key={i} type="button"
-                    onClick={() => { if (turnPhase === 'solving_problem') setAnswer(opt); }}
-                    disabled={turnPhase !== 'solving_problem'}
-                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all
-                      ${isSelected ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200' : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50'}
-                      disabled:opacity-50`}>
-                    <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-      {problemType === 'histogram' && (
-        <div className="w-full text-center">
-          <p className="text-base sm:text-xl md:text-2xl mb-2 sm:mb-4 font-mono">{problemData?.question}</p>
-          <HistogramView bars={problemData?.bars || []} xLabel={problemData?.xLabel} yLabel={problemData?.yLabel} />
-          {problemData?.options && (
-            <div className="grid gap-2 w-full max-w-lg mt-4 text-lg">
-              {(problemData.options as string[]).map((opt: string, i: number) => {
-                const isSelected = answer === opt;
-                return (
-                  <button key={i} type="button"
-                    onClick={() => { if (turnPhase === 'solving_problem') setAnswer(opt); }}
-                    disabled={turnPhase !== 'solving_problem'}
-                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all
-                      ${isSelected ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200' : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50'}
-                      disabled:opacity-50`}>
-                    <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-      {problemType === 'graph_with_area' &&
-          <div className="text-center w-full">
-            <p className="text-base sm:text-xl md:text-2xl mb-2 sm:mb-4 font-mono">{problemData?.question || "面積を求めよ"}</p>
-            <div className="w-full max-w-[200px] sm:max-w-[280px] md:max-w-sm mx-auto aspect-square bg-slate-900 rounded-xl p-2 border border-cyan-500/10">
-             <GraphProblemView lines={problemData?.graphLines || []} polygon={problemData?.polygon} />
-            </div>
-          </div>
-      }
-      {(problemType === 'text' || !problemType) && (
-        <div className="w-full min-h-[6rem] sm:min-h-[10rem] bg-slate-900/50 border border-cyan-500/5 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 flex flex-col items-center justify-center text-center text-white text-base sm:text-xl md:text-2xl font-mono tracking-tight">
-          <p>{problemData?.question || problemData?.questionText || "数式を解析せよ"}</p>
-          {problemData?.imageUrl && <img src={problemData.imageUrl} alt="DOC" className="max-w-full max-h-32 sm:max-h-48 mx-auto rounded-lg border border-cyan-500/10 p-1 bg-slate-900 my-2 sm:my-4" />}
-          {problemData?.svg && (
-            <div className="svg-container w-full max-w-xs sm:max-w-sm h-auto my-3 sm:my-6 p-2 sm:p-4 bg-slate-950 rounded-lg border border-cyan-500/10 max-h-[160px] sm:max-h-[220px] md:max-h-[240px] flex items-center justify-center" dangerouslySetInnerHTML={{ __html: problemData.svg }} />
-          )}
-          {problemData?.options && (
-            <div className="grid gap-2 w-full max-w-lg mt-4 text-lg">
-              {(problemData.options as string[]).map((opt: string, i: number) => {
-                const isSelected = problemData.multiple
-                  ? answer.split(',').map((s: string) => s.trim()).includes(opt)
-                  : answer === opt;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      if (turnPhase !== 'solving_problem') return;
-                      if (problemData.multiple) {
-                        const current = answer ? answer.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-                        if (current.includes(opt)) {
-                          setAnswer(current.filter((s: string) => s !== opt).join(','));
-                        } else {
-                          setAnswer([...current, opt].join(','));
-                        }
-                      } else {
-                        setAnswer(opt);
-                      }
-                    }}
-                    disabled={turnPhase !== 'solving_problem'}
-                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all
-                      ${isSelected
-                        ? 'border-cyan-400 bg-cyan-900/30 text-cyan-200'
-                        : 'border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-600/50'}
-                      disabled:opacity-50`}
-                  >
-                    <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Question */}
+      <div className="w-full mb-4 bg-slate-900/50 border border-cyan-500/10 rounded-xl p-4 text-center">
+        <p className="text-white text-base sm:text-lg md:text-xl font-bold leading-relaxed">{problemData.question}</p>
+        {problemData.japanese && (
+          <p className="text-cyan-400/70 text-sm mt-2 italic">{problemData.japanese}</p>
+        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full">
-        {!['proof'].includes(problemType) && (
-          <div className="w-full flex flex-col items-center mt-6">
-             {!problemData?.options && !['fill_in_proof', 'graphing', 'graphing_with_table', 'vertical_calculation', 'guided_equation', 'simultaneous_equation', 'intersection_guided_equation'].includes(problemType) && (
-                 <div className="w-full max-w-xl mb-4">
-                    <div className={`min-h-[4rem] p-4 bg-slate-950 rounded-xl border-2 border-cyan-500/30 flex items-center shadow-inner`}>
-                        <span className="text-sm font-bold text-cyan-400 mr-4 whitespace-nowrap">解答:</span>
-                        {(problemType === 'text' || !problemType) ? (
-                          <input
-                            type="text"
-                            value={answer}
-                            onChange={(e) => turnPhase === 'solving_problem' && setAnswer(e.target.value)}
-                            disabled={turnPhase !== 'solving_problem'}
-                            placeholder="ここに入力..."
-                            className="flex-grow bg-transparent text-2xl sm:text-3xl font-mono text-cyan-200 font-bold tracking-wide outline-none placeholder:text-cyan-800 placeholder:text-lg"
-                          />
-                        ) : (
-                          <span className="text-3xl font-mono text-cyan-200 flex-grow font-bold tracking-wide" style={{ wordBreak: 'break-all' }}>{answer || <span className="text-cyan-800 text-lg">入力してください...</span>}</span>
-                        )}
-                    </div>
-                </div>
-             )}
-            {!problemData?.options && <Keypad onKeyClick={handleKeypadClick} layout={battleKeypadLayout} disabled={turnPhase !== 'solving_problem'} />}
-             <button
-              type="submit"
-              disabled={!isSolving || turnPhase !== 'solving_problem'}
-              className="w-full mt-6 bg-blue-600 text-white font-bold py-4 px-10 rounded-xl hover:bg-blue-500 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-xl border border-blue-400/30 shadow-xl"
+      {/* select type: clickable options, auto-submit */}
+      {problemType === 'select' && problemData.options && (
+        <div className="grid gap-2 w-full max-w-lg">
+          {problemData.options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { if (!isDisabled) onAnswerSubmit(opt); }}
+              disabled={isDisabled}
+              className="w-full text-left px-4 py-3 rounded-lg border transition-all border-cyan-900/30 bg-slate-900/60 text-white hover:border-cyan-400 hover:bg-cyan-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="text-cyan-500 mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* input type: text field + submit */}
+      {problemType === 'input' && (
+        <div className="w-full max-w-lg flex flex-col gap-3">
+          <input
+            type="text"
+            value={inputAnswer}
+            onChange={(e) => { if (!isDisabled) setInputAnswer(e.target.value); }}
+            disabled={isDisabled}
+            placeholder="ここに入力..."
+            autoFocus
+            className="w-full bg-slate-950 border-2 border-cyan-500/30 rounded-xl px-4 py-3 text-white text-lg font-mono outline-none focus:border-cyan-400 placeholder:text-cyan-800 disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={() => { if (inputAnswer.trim()) onAnswerSubmit(inputAnswer.trim()); }}
+            disabled={isDisabled || !inputAnswer.trim()}
+            className="w-full bg-blue-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-blue-500 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-lg border border-blue-400/30"
+          >
+            解答する
+          </button>
+        </div>
+      )}
+
+      {/* sort type: word ordering UI */}
+      {problemType === 'sort' && (
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          {/* Answer area */}
+          <div className="min-h-[3rem] bg-slate-900/60 border-2 border-cyan-500/20 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+            {selectedWords.length === 0 && (
+              <span className="text-cyan-800 text-sm">単語をクリックして並べよう</span>
+            )}
+            {selectedWords.map((word, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectedWordClick(word, i)}
+                disabled={isDisabled}
+                className="px-3 py-1.5 bg-cyan-900/60 border border-cyan-400/40 text-cyan-200 rounded-lg text-sm font-bold hover:bg-red-900/40 hover:border-red-400/40 transition-all disabled:cursor-not-allowed"
+              >
+                {word}
+              </button>
+            ))}
+          </div>
+
+          {/* Word bank */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            {remainingWords.map((word, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleWordClick(word, i)}
+                disabled={isDisabled}
+                className="px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm font-bold hover:bg-cyan-900/40 hover:border-cyan-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {word}
+              </button>
+            ))}
+          </div>
+
+          {/* Submit button (shown when all words placed but not yet auto-submitted) */}
+          {selectedWords.length > 0 && remainingWords.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { if (selectedWords.length > 0) onAnswerSubmit(selectedWords.join(' ')); }}
+              disabled={isDisabled || selectedWords.length === 0}
+              className="w-full bg-blue-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-blue-500 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-lg border border-blue-400/30"
             >
               解答する
             </button>
-          </div>
-        )}
-      </form>
+          )}
+        </div>
+      )}
     </div>
   );
 };
