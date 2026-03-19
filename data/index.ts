@@ -1,10 +1,4 @@
-import type { Problem, ProblemSet } from '../types';
-import { geometryProblems } from './geometryProblems';
-import { linearFunctionsProblems } from './linearFunctionsProblems';
-import { polynomialProblems } from './polynomialProblems';
-import { probabilityProblems } from './probabilityProblems';
-import { simultaneousEquationsProblems } from './simultaneousEquations';
-import { dataAnalysisProblems } from './dataAnalysisProblems';
+import type { Problem } from '../types';
 import { futureProblems } from './01_future';
 import { gerundProblems } from './02_gerunds';
 import { infinitiveProblems } from './03_infinitives';
@@ -19,15 +13,6 @@ import { presentPerfectProblems } from './09_present_perfect';
 import { presentPerfectProgressiveProblems } from './10_present_perfect_progressive';
 import { infinitive2Problems } from './11_infinitives_2';
 import { otherProblems } from './12_others';
-
-export const ALL_PROBLEM_SETS: Record<string, Problem[]> = {
-  ...geometryProblems,
-  ...linearFunctionsProblems,
-  ...polynomialProblems,
-  ...simultaneousEquationsProblems,
-  ...probabilityProblems,
-  ...dataAnalysisProblems,
-};
 
 export const ENGLISH_PROBLEMS: Record<string, Problem[]> = {
   '未来': futureProblems,
