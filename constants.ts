@@ -26,102 +26,225 @@ export const DECK_CONSTRAINTS: Record<number, number> = {
   5: 3,
 };
 
-// 英語文法カテゴリ × 問題タイプ別に構造化
+// 英語文法カテゴリ × 問題タイプ別に構造化（学年別）
 export const ENG_CATEGORIES: CategoryDef[] = [
+  // ── 中学1年生 文法 ──────────────────────────────────────
+  {
+    name: 'be動詞',
+    grade: 1,
+    groups: [{ name: 'am / is / are の肯定・否定・疑問', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '一般動詞',
+    grade: 1,
+    groups: [{ name: '一般動詞の肯定・否定・疑問', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '代名詞',
+    grade: 1,
+    groups: [{ name: '主格・目的格・所有格', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '名詞の複数形',
+    grade: 1,
+    groups: [{ name: '規則変化・不規則変化', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '現在進行形',
+    grade: 1,
+    groups: [{ name: 'be動詞 + -ing 形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '過去形',
+    grade: 1,
+    groups: [{ name: '規則動詞・不規則動詞の過去形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '過去進行形',
+    grade: 1,
+    groups: [{ name: 'was / were + -ing 形', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '疑問詞',
+    grade: 1,
+    groups: [{ name: 'what / who / when / where / why / how', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '命令文',
+    grade: 1,
+    groups: [{ name: '肯定命令・否定命令・Let\'s', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: '感嘆文',
+    grade: 1,
+    groups: [{ name: 'What a ...! / How ...!', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  {
+    name: 'there is',
+    grade: 1,
+    groups: [{ name: 'there is/are 構文', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  // ── 中学2年生 文法 ──────────────────────────────────────
   {
     name: '未来',
+    grade: 2,
     groups: [{ name: 'will / be going to', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '動名詞',
+    grade: 2,
     groups: [{ name: '動名詞の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '不定詞',
+    grade: 2,
     groups: [{ name: '不定詞3用法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '助動詞【must】',
+    grade: 2,
     groups: [{ name: 'must / have to', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '助動詞【have to】',
+    grade: 2,
     groups: [{ name: 'have to の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '助動詞【その他】',
+    grade: 2,
     groups: [{ name: 'can / may / should / shall', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '比較',
+    grade: 2,
     groups: [{ name: '比較級・最上級・原級', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
-    name: 'there is',
-    groups: [{ name: 'there is/are 構文', subtopics: ['選択式', '記述式', '並び替え'] }],
-  },
-  {
     name: '接続詞',
+    grade: 2,
     groups: [{ name: '接続詞の用法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '受け身',
+    grade: 2,
     groups: [{ name: '受動態', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '現在完了',
+    grade: 2,
     groups: [{ name: '現在完了の3用法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
+  // ── 中学3年生 文法 ──────────────────────────────────────
   {
     name: '現在完了進行形',
+    grade: 3,
     groups: [{ name: '現在完了進行形', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '不定詞2',
+    grade: 3,
     groups: [{ name: '不定詞の発展', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: 'その他',
+    grade: 3,
     groups: [{ name: 'その他の文法', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
-  // ── 英単語 ────────────────────────────────────────────
-  {
-    name: '英単語【動詞】',
-    groups: [{
-      name: '動詞の英単語',
-      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
-    }],
-  },
-  {
-    name: '英単語【名詞】',
-    groups: [{
-      name: '名詞の英単語',
-      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
-    }],
-  },
-  {
-    name: '英単語【形容詞・副詞】',
-    groups: [{
-      name: '形容詞・副詞の英単語',
-      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
-    }],
-  },
-  // ── 中学3年生 文法 ──────────────────────────────────────
   {
     name: '関係代名詞',
+    grade: 3,
     groups: [{ name: 'who / which / that', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '分詞の後置修飾',
+    grade: 3,
     groups: [{ name: '現在分詞・過去分詞', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '間接疑問文',
+    grade: 3,
     groups: [{ name: '疑問詞 + 主語 + 動詞', subtopics: ['選択式', '記述式', '並び替え'] }],
   },
   {
     name: '仮定法',
+    grade: 3,
     groups: [{ name: 'if / wish 仮定法', subtopics: ['選択式', '記述式', '並び替え'] }],
+  },
+  // ── 英単語 中1 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中1',
+    grade: 1,
+    groups: [{
+      name: '動詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中1',
+    grade: 1,
+    groups: [{
+      name: '名詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中1',
+    grade: 1,
+    groups: [{
+      name: '形容詞・副詞の英単語（中1）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  // ── 英単語 中2 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中2',
+    grade: 2,
+    groups: [{
+      name: '動詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中2',
+    grade: 2,
+    groups: [{
+      name: '名詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中2',
+    grade: 2,
+    groups: [{
+      name: '形容詞・副詞の英単語（中2）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  // ── 英単語 中3 ────────────────────────────────────────────
+  {
+    name: '英単語【動詞】中3',
+    grade: 3,
+    groups: [{
+      name: '動詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【名詞】中3',
+    grade: 3,
+    groups: [{
+      name: '名詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
+  },
+  {
+    name: '英単語【形容詞・副詞】中3',
+    grade: 3,
+    groups: [{
+      name: '形容詞・副詞の英単語（中3）',
+      subtopics: ['英→日（意味選択）', '日→英（単語選択）', '日→英（単語入力）'],
+    }],
   },
 ];
 
@@ -135,6 +258,13 @@ const assignAbility = (card: ProblemCard): Ability | undefined => {
   // select(difficulty=2)はアビリティなし。input/sort のみ
   if (card.difficulty < 3) return undefined;
   const abilityMap: { [key: string]: AbilityType[] } = {
+    // 中1
+    'be動詞':         ['SCORE_BOOST'],
+    '一般動詞':       ['SCORE_BOOST'],
+    '現在進行形':     ['TIME_PRESSURE'],
+    '過去形':         ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
+    '過去進行形':     ['TIME_PRESSURE'],
+    // 中2
     '受け身':         ['DEFENSIVE_STANCE'],
     '現在完了':       ['DEFENSIVE_STANCE', 'SCORE_BOOST'],
     '現在完了進行形': ['TIME_PRESSURE'],

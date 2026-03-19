@@ -103,9 +103,31 @@ const TopicRankingModal: React.FC<{
   );
 };
 
+const GRADE_LABELS: Record<number, string> = { 1: '中1', 2: '中2', 3: '中3' };
+const GRADE_COLORS: Record<number, string> = {
+  1: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  2: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  3: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+};
+const GRADE_TAB_COLORS: Record<number, string> = {
+  1: 'bg-emerald-600 text-white border-emerald-400',
+  2: 'bg-blue-600 text-white border-blue-400',
+  3: 'bg-purple-600 text-white border-purple-400',
+};
+
 const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords, onExit, db }) => {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryDef | null>(ENG_CATEGORIES[0]);
+  const [selectedGrade, setSelectedGrade] = useState<1 | 2 | 3 | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryDef | null>(null);
   const [rankingTopic, setRankingTopic] = useState<string | null>(null);
+
+  const filteredCategories = selectedGrade
+    ? ENG_CATEGORIES.filter(cat => cat.grade === selectedGrade)
+    : ENG_CATEGORIES;
+
+  const handleGradeSelect = (grade: 1 | 2 | 3 | null) => {
+    setSelectedGrade(grade);
+    setSelectedCategory(null);
+  };
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 text-white overflow-y-auto">
@@ -120,6 +142,33 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords
         <p className="text-cyan-400 text-xs sm:text-sm font-bold">分野を選んで問題を解こう</p>
       </header>
 
+      {/* Grade Tab Selector */}
+      <div className="w-full max-w-7xl flex gap-2 mb-3 flex-shrink-0">
+        <button
+          onClick={() => handleGradeSelect(null)}
+          className={`px-4 py-2 rounded-lg font-bold text-xs border transition-all ${
+            selectedGrade === null
+              ? 'bg-cyan-600 text-white border-cyan-400'
+              : 'bg-transparent text-cyan-600 border-cyan-800 hover:border-cyan-500 hover:text-cyan-400'
+          }`}
+        >
+          全学年
+        </button>
+        {([1, 2, 3] as const).map(g => (
+          <button
+            key={g}
+            onClick={() => handleGradeSelect(g)}
+            className={`px-4 py-2 rounded-lg font-bold text-xs border transition-all ${
+              selectedGrade === g
+                ? GRADE_TAB_COLORS[g]
+                : 'bg-transparent text-cyan-600 border-cyan-800 hover:border-cyan-500 hover:text-cyan-400'
+            }`}
+          >
+            {GRADE_LABELS[g]}
+          </button>
+        ))}
+      </div>
+
       <main className="w-full max-w-7xl hud-panel rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col md:flex-row flex-grow md:flex-grow-0 md:h-[65vh] min-h-0">
         <div className="corner-accent lt"></div>
         <div className="corner-accent rb"></div>
@@ -127,7 +176,7 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords
         {/* Left Side: Category Selection */}
         <div className="w-full md:w-1/4 bg-slate-950/60 border-b md:border-b-0 md:border-r border-cyan-500/10 flex md:flex-col p-3 sm:p-4 md:p-6 gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible md:overflow-y-auto flex-shrink-0">
           <h2 className="text-xs font-bold text-cyan-400 mb-1 md:mb-2 hidden md:block">分野を選択</h2>
-          {ENG_CATEGORIES.map((cat) => (
+          {filteredCategories.map((cat) => (
             <button
               key={cat.name}
               onClick={() => setSelectedCategory(cat)}
@@ -137,6 +186,9 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords
                   : 'bg-transparent border-transparent text-cyan-700 hover:text-cyan-400 hover:bg-slate-900/40'
                 }`}
             >
+              <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border mr-1.5 ${GRADE_COLORS[cat.grade]}`}>
+                {GRADE_LABELS[cat.grade]}
+              </span>
               {cat.name}
             </button>
           ))}
@@ -147,6 +199,9 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onSelectSubTopic, onShowRecords
           <div className="flex-grow overflow-y-auto custom-scrollbar p-6 md:p-10 animate-math-fade-in">
             <header className="mb-8 flex justify-between items-end border-b border-cyan-500/10 pb-4">
                 <div>
+                   <span className={`inline-block text-xs font-bold px-2 py-1 rounded border mb-2 ${GRADE_COLORS[selectedCategory.grade]}`}>
+                     {GRADE_LABELS[selectedCategory.grade]}
+                   </span>
                    <h2 className="text-3xl font-bold text-white">{selectedCategory.name}</h2>
                 </div>
                 <p className="text-xs text-cyan-500 font-bold hidden sm:block">{selectedCategory.groups.reduce((acc, g) => acc + g.subtopics.length, 0)} 単元</p>
