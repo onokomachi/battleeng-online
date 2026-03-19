@@ -18,7 +18,10 @@ export type EnglishCategory =
   | '現在完了'
   | '現在完了進行形'
   | '不定詞2'
-  | 'その他';
+  | 'その他'
+  | '英単語【動詞】'
+  | '英単語【名詞】'
+  | '英単語【形容詞・副詞】';
 
 // --- Student Profile (学年・組・番号) ---
 export interface StudentProfile {
