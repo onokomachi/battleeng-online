@@ -4,90 +4,174 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BATTLE-ENG ONLINE: SPACE PROTOCOL</title>
+    <title>BATTLE-ENG ONLINE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@500;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700;900&family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-deep: #000000; 
-  --stellar-cyan: #22d3ee;
-  --neon-glow: 0 0 10px rgba(34, 211, 238, 0.8), 0 0 20px rgba(34, 211, 238, 0.4);
+  /* === BATTLE-ENG Sports Color System === */
+  --bg-main: #0B1D35;        /* Deep navy — sports arena at night */
+  --bg-card: #0F2444;        /* Panel background */
+  --bg-surface: #162d50;     /* Elevated surface */
+  --sky-blue: #0EA5E9;       /* Primary — team color */
+  --sky-blue-bright: #38BDF8;/* Lighter blue for accents */
+  --vivid-orange: #F97316;   /* Accent — energy/fire */
+  --orange-bright: #FB923C;  /* Lighter orange */
+  --success: #22C55E;        /* Correct answer */
+  --danger: #EF4444;         /* Wrong answer */
+  --gold: #F59E0B;           /* Rankings/rewards */
+  --text-primary: #F1F5F9;   /* Main text */
+  --text-secondary: #94A3B8; /* Secondary text */
+  --border-subtle: rgba(56, 189, 248, 0.18);
+  --border-bright: rgba(56, 189, 248, 0.5);
+  --glow-blue: 0 0 20px rgba(14, 165, 233, 0.4), 0 0 60px rgba(14, 165, 233, 0.15);
+  --glow-orange: 0 0 20px rgba(249, 115, 22, 0.4), 0 0 60px rgba(249, 115, 22, 0.15);
 }
 
 body {
   margin: 0; padding: 0; overflow: hidden;
-  font-family: 'Inter', sans-serif;
-  background: var(--bg-deep);
-  color: #e2e8f0;
+  font-family: 'Noto Sans JP', 'Inter', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
 }
 
 #root { position: relative; z-index: 10; height: 100vh; }
 
-/* --- Space HUD & Hologram Styles --- */
+/* === Sports Card Panel === */
 .hud-panel {
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+  background: rgba(15, 36, 68, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.1);
 }
 
+/* === Athletic Title === */
 .text-hologram {
-  font-family: 'Cinzel Decorative', serif;
-  background: linear-gradient(to bottom, #ffffff 30%, #f1f5f9 100%);
+  font-family: 'Bebas Neue', sans-serif;
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 40%, #F97316 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+  filter: drop-shadow(0 2px 12px rgba(14, 165, 233, 0.5));
+  letter-spacing: 0.05em;
 }
 
+/* === Primary Action Button === */
 .btn-tactical {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  border: none;
   color: #fff;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 800;
+  font-family: 'Noto Sans JP', 'Inter', sans-serif;
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .btn-tactical:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.btn-tactical:active { transform: translateY(0); }
+
+/* === Orange Accent Button === */
+.btn-orange {
+  background: linear-gradient(135deg, #F97316 0%, #EA6B0A 100%);
+  border: none;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-orange:hover {
+  background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(249, 115, 22, 0.6);
 }
 
+/* === Sports Card (Answer Options) === */
+.card-sports {
+  background: rgba(22, 45, 80, 0.95);
+  border: 2px solid var(--border-subtle);
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.card-sports:hover {
+  border-color: var(--sky-blue);
+  background: rgba(14, 165, 233, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
+}
+.card-sports.selected {
+  border-color: var(--vivid-orange);
+  background: rgba(249, 115, 22, 0.12);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+}
+
+/* === Corner Accents (now blue/orange) === */
 .corner-accent {
-  position: absolute; width: 12px; height: 12px; border-color: rgba(255, 255, 255, 0.3); border-style: solid;
+  position: absolute; width: 14px; height: 14px;
+  border-color: var(--sky-blue-bright); border-style: solid; opacity: 0.6;
 }
 .lt { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
 .rt { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
 .lb { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
 .rb { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-@keyframes math-fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* === Score / Stats Badge === */
+.stat-badge {
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+
+/* === Rank Medals === */
+.rank-gold   { color: #F59E0B; text-shadow: 0 0 12px rgba(245,158,11,0.6); }
+.rank-silver { color: #94A3B8; text-shadow: 0 0 8px rgba(148,163,184,0.4); }
+.rank-bronze { color: #CD7C2F; text-shadow: 0 0 8px rgba(205,124,47,0.4); }
+
+/* === Animations === */
+@keyframes eng-fade-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .animate-math-fade-in {
-  animation: math-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: eng-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes level-up-reveal {
-  0% { transform: scale(0.8) translateY(40px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0%   { transform: scale(0.8) translateY(40px); opacity: 0; }
+  100% { transform: scale(1)   translateY(0);    opacity: 1; }
 }
 .animate-level-up-reveal {
   animation: level-up-reveal 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
 }
 
 @keyframes pulse-slow {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.03); opacity: 0.9; }
+  0%, 100% { transform: scale(1);    opacity: 1;   }
+  50%       { transform: scale(1.03); opacity: 0.9; }
 }
-.animate-pulse-slow {
-  animation: pulse-slow 4s infinite ease-in-out;
-}
+.animate-pulse-slow { animation: pulse-slow 4s infinite ease-in-out; }
 
+@keyframes score-pop {
+  0%   { transform: scale(1);    }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1);    }
+}
+.animate-score-pop { animation: score-pop 0.35s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-slide-up { animation: slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Card flip */
 .card-container { perspective: 1000px; width: 14rem; height: 18rem; }
 .card-inner {
-  position: relative; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative; width: 100%; height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d; cursor: pointer;
 }
 .card-inner.is-flipped { transform: rotateY(180deg); }
@@ -96,19 +180,31 @@ body {
 }
 .card-front { transform: rotateY(180deg); }
 
+/* VFX */
 @keyframes screen-shake {
-  0%, 100% { transform: translate(0, 0); }
+  0%, 100%              { transform: translate(0, 0); }
   10%, 30%, 50%, 70%, 90% { transform: translate(-2px, 1px); }
-  20%, 40%, 60%, 80% { transform: translate(2px, -1px); }
+  20%, 40%, 60%, 80%    { transform: translate(2px, -1px); }
 }
 .vfx-shake { animation: screen-shake 0.4s both; }
 
 @keyframes success-burst {
-  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-  100% { box-shadow: 0 0 50px 100px rgba(255, 255, 255, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  100% { box-shadow: 0 0 60px 120px rgba(34, 197, 94, 0); }
 }
 .vfx-success { animation: success-burst 0.5s ease-out; }
 
+/* EXP Bar glow */
+.exp-bar-fill {
+  background: linear-gradient(90deg, #0EA5E9, #38BDF8, #F97316);
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+
+/* Streak fire badge */
+.streak-badge {
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
+}
 </style>
 </head>
   <body>
