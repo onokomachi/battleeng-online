@@ -27,7 +27,31 @@ interface MainMenuProps {
   equippedTitleName?: string | null;
 }
 
-// ── Top Navigation Bar ────────────────────────────────────────────────────
+// ── Single-color SVG silhouette icons ─────────────────────────────────────
+const IconSword: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14.5 2.5L21 9l-1.5 1.5-1-1-7 7 1 1L11 19l-1.5 1.5-1-1-3.5 3.5H3v-2l3.5-3.5-1-1L7 15l1.5-1.5 1 1 7-7-1-1L17 5l1.5-1.5 1 1z" />
+    <path d="M17.5 6.5l-9 9" strokeWidth="0" />
+  </svg>
+);
+
+const IconBook: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C9.5 2 7.5 3 6 4.5V19c1.5-1 3.5-1.5 6-1.5s4.5.5 6 1.5V4.5C16.5 3 14.5 2 12 2zm0 14c-2 0-3.8.3-5 1V5.5C8.2 4.5 10 4 12 4s3.8.5 5 1.5V17c-1.2-.7-3-.9-5-1z" />
+    <path d="M11 7h2v6h-2z" />
+  </svg>
+);
+
+const IconShop: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M4 4h16l-1.5 9H5.5L4 4zm0 0H2M8 4l1 6M16 4l-1 6M5.5 13v6a1 1 0 001 1h11a1 1 0 001-1v-6" strokeLinecap="round" />
+    <path d="M6 4h12l-1.4 8.5H7.4L6 4z" />
+    <rect x="7" y="13" width="10" height="7" rx="1" />
+    <path d="M10 13v7M14 13v7" opacity=".4" />
+  </svg>
+);
+
+// ── Top Bar ────────────────────────────────────────────────────────────────
 const TopBar: React.FC<{
   user: User | null | undefined;
   mathPoints: number | undefined;
@@ -49,15 +73,20 @@ const TopBar: React.FC<{
   onOpenClassBattle, hasStudentProfile, canAccessGameMaster, onOpenGameMaster,
   equippedTitleName,
 }) => (
-  <div className="flex items-center justify-between px-4 lg:px-6 py-3 border-b"
-       style={{ borderColor: 'rgba(56,189,248,0.15)', background: 'rgba(11,29,53,0.7)', backdropFilter: 'blur(12px)' }}>
+  <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 border-b flex-shrink-0"
+       style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(11,29,53,0.85)', backdropFilter: 'blur(12px)' }}>
     {/* Logo */}
-    <div className="flex items-center gap-3">
-      <span className="text-2xl lg:text-3xl font-black text-hologram" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-        BATTLE-ENG
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-xl sm:text-2xl font-black whitespace-nowrap"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#F97316', letterSpacing: '0.04em' }}>
+        Battle
+      </span>
+      <span className="text-xl sm:text-2xl font-black whitespace-nowrap"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#38BDF8', letterSpacing: '0.04em' }}>
+        ENG
       </span>
       {equippedTitleName && (
-        <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full font-bold"
+        <span className="hidden md:inline text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0"
               style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
           {equippedTitleName}
         </span>
@@ -65,45 +94,40 @@ const TopBar: React.FC<{
     </div>
 
     {/* Right actions */}
-    <div className="flex items-center gap-2">
-      {/* MP */}
+    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
       {mathPoints !== undefined && (
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-             style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-          <span className="text-[10px] font-bold" style={{ color: '#F59E0B' }}>EP</span>
-          <span className="text-sm font-black" style={{ color: '#F59E0B' }}>{mathPoints.toLocaleString()}</span>
+        <div className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg"
+             style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)' }}>
+          <span className="text-[10px] font-black" style={{ color: '#FB923C' }}>EP</span>
+          <span className="text-sm font-black" style={{ color: '#FB923C' }}>{mathPoints.toLocaleString()}</span>
         </div>
       )}
-
-      {/* Streak */}
       {loginStreak !== undefined && loginStreak >= 1 && (
         <button onClick={onOpenLoginBonus}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg streak-badge text-white text-xs font-black hover:opacity-90 transition-opacity">
-          🔥 {loginStreak}日
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-white text-xs font-black hover:opacity-90 transition-opacity"
+                style={{ background: 'linear-gradient(135deg,#F97316,#EF4444)', boxShadow: '0 2px 8px rgba(249,115,22,0.4)' }}>
+          🔥{loginStreak}
         </button>
       )}
-
-      {/* Nav buttons */}
       {[
         onOpenRanking  && { label: 'ランキング', fn: onOpenRanking },
         onOpenQuests && user && { label: 'クエスト', fn: onOpenQuests },
         onOpenWeakness && { label: '弱点', fn: onOpenWeakness },
-        onOpenItemShop && { label: 'ショップ', fn: onOpenItemShop },
-        onOpenClassBattle && user && hasStudentProfile && { label: 'クラス対抗', fn: onOpenClassBattle, orange: true },
+        onOpenItemShop && { label: 'アイテム', fn: onOpenItemShop },
+        onOpenClassBattle && user && hasStudentProfile && { label: 'クラス', fn: onOpenClassBattle, orange: true },
       ].filter(Boolean).map((item: any) => item && (
         <button key={item.label} onClick={item.fn}
-                className={`hidden sm:block px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:-translate-y-0.5 ${
+                className={`hidden md:block px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 ${
                   item.orange
-                    ? 'text-orange-400 border border-orange-500/30 hover:bg-orange-900/20'
-                    : 'text-sky-300 border border-sky-500/20 hover:bg-sky-900/20'
+                    ? 'text-orange-300 border border-orange-500/40 hover:bg-orange-900/30'
+                    : 'text-sky-300 border border-sky-500/25 hover:bg-sky-900/25'
                 }`}>
           {item.label}
         </button>
       ))}
-
       {canAccessGameMaster && onOpenGameMaster && (
         <button onClick={onOpenGameMaster}
-                className="p-1.5 rounded-lg text-slate-500 border border-slate-700/50 hover:text-sky-400 hover:border-sky-500/30 transition-colors"
+                className="p-1.5 rounded-lg text-slate-500 border border-slate-700/50 hover:text-sky-400 transition-colors"
                 title="管理画面">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -111,10 +135,9 @@ const TopBar: React.FC<{
           </svg>
         </button>
       )}
-
       {user && onLogout && (
         <button onClick={onLogout}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 border border-slate-700 hover:text-white transition-colors">
+                className="px-2 py-1.5 rounded-lg text-xs font-bold text-slate-500 border border-slate-700 hover:text-white transition-colors">
           OUT
         </button>
       )}
@@ -122,7 +145,7 @@ const TopBar: React.FC<{
   </div>
 );
 
-// ── Player Card (left column) ──────────────────────────────────────────────
+// ── Player Card ────────────────────────────────────────────────────────────
 const PlayerCard: React.FC<{
   user: User | null | undefined;
   playerLevel: number;
@@ -142,70 +165,74 @@ const PlayerCard: React.FC<{
   onSelectMode,
 }) => {
   const expPct = Math.min(100, (playerExp / expForNextLevel) * 100);
-
   return (
-    <div className="flex flex-col gap-4 h-full">
-      {/* Player Identity Card */}
-      <div className="hud-panel rounded-2xl p-5 relative overflow-hidden"
-           style={{ borderColor: 'rgba(14,165,233,0.3)', boxShadow: '0 0 30px rgba(14,165,233,0.1)' }}>
-        <div className="corner-accent lt" /><div className="corner-accent rb" />
-
-        {/* Top accent stripe */}
+    <div className="flex flex-col gap-3 h-full">
+      {/* Identity Card */}
+      <div className="hud-panel rounded-2xl p-4 relative overflow-hidden flex-shrink-0"
+           style={{ borderColor: 'rgba(249,115,22,0.3)', boxShadow: '0 0 24px rgba(249,115,22,0.08)' }}>
+        {/* Top stripe: orange */}
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-             style={{ background: 'linear-gradient(90deg, #0EA5E9, #F97316)' }} />
+             style={{ background: 'linear-gradient(90deg, #F97316, #38BDF8)' }} />
 
         {user ? (
-          <div className="flex items-center gap-4 mt-1">
-            {user.photoURL && (
+          <div className="flex items-center gap-3 mt-1">
+            {user.photoURL ? (
               <div className="relative flex-shrink-0">
                 <img src={user.photoURL} alt=""
-                     className="w-16 h-16 rounded-full"
-                     style={{ border: '3px solid #0EA5E9', boxShadow: '0 0 16px rgba(14,165,233,0.5)' }} />
-                <div className="absolute -bottom-1 -right-1 text-xs font-black px-1.5 py-0.5 rounded-full"
-                     style={{ background: '#0EA5E9', color: '#fff', fontSize: '10px' }}>
-                  Lv.{playerLevel}
+                     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full"
+                     style={{ border: '2px solid #F97316', boxShadow: '0 0 14px rgba(249,115,22,0.4)' }} />
+                <div className="absolute -bottom-1 -right-1 text-[10px] font-black px-1 py-0.5 rounded-full leading-none"
+                     style={{ background: '#F97316', color: '#fff' }}>
+                  {playerLevel}
                 </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(249,115,22,0.2)', border: '2px solid #F97316' }}>
+                <span className="text-xl font-black" style={{ color: '#F97316' }}>{playerLevel}</span>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-base font-black text-white truncate">{user.displayName}</p>
-              <p className="text-[10px] text-sky-400 font-bold tracking-wider">PLAYER</p>
+              <p className="text-sm sm:text-base font-black text-white truncate">{user.displayName}</p>
+              <p className="text-[10px] font-bold tracking-wider" style={{ color: '#F97316' }}>PLAYER</p>
               {mathPoints !== undefined && (
-                <p className="text-sm font-black mt-0.5" style={{ color: '#F59E0B' }}>
-                  EP: {mathPoints.toLocaleString()}
+                <p className="text-xs sm:text-sm font-black" style={{ color: '#F59E0B' }}>
+                  EP {mathPoints.toLocaleString()}
                 </p>
               )}
             </div>
             {loginStreak !== undefined && loginStreak >= 1 && (
               <button onClick={onOpenLoginBonus}
-                      className="flex-shrink-0 streak-badge px-2.5 py-1.5 rounded-lg text-white text-sm font-black">
+                      className="flex-shrink-0 px-2 py-1.5 rounded-lg text-white text-xs font-black hover:opacity-90"
+                      style={{ background: 'linear-gradient(135deg,#F97316,#EF4444)', boxShadow: '0 2px 8px rgba(249,115,22,0.4)' }}>
                 🔥{loginStreak}
               </button>
             )}
           </div>
         ) : (
-          <div className="text-center py-2">
-            <p className="text-2xl font-black text-white">GUEST</p>
+          <div className="text-center py-1 mt-1">
+            <p className="text-xl font-black text-white">GUEST</p>
             <button onClick={() => onSelectMode('login_screen')}
-                    className="mt-2 text-xs text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-lg hover:bg-sky-900/20 transition-colors font-bold">
+                    className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
+                    style={{ color: '#38BDF8', borderColor: 'rgba(56,189,248,0.3)' }}>
               ログインして記録を保存
             </button>
           </div>
         )}
 
         {/* EXP bar */}
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[10px] text-sky-400 font-bold tracking-wider">EXPERIENCE</span>
-            <span className="text-[10px] text-slate-400 font-mono">{playerExp} / {expForNextLevel}</span>
+        <div className="mt-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] font-bold tracking-wider" style={{ color: '#38BDF8' }}>EXPERIENCE</span>
+            <span className="text-[10px] text-slate-400 font-mono">{playerExp}/{expForNextLevel}</span>
           </div>
-          <div className="w-full h-2.5 rounded-full bg-slate-800/80 overflow-hidden border border-slate-700/50">
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <div className="exp-bar-fill h-full rounded-full transition-all duration-1000"
                  style={{ width: `${expPct}%` }} />
           </div>
-          <div className="flex justify-between items-center mt-1">
-            <span className="text-[10px] text-slate-500">Lv.{playerLevel}</span>
-            <span className="text-[10px] text-slate-500">Lv.{playerLevel + 1}</span>
+          <div className="flex justify-between mt-0.5">
+            <span className="text-[9px] text-slate-600">Lv.{playerLevel}</span>
+            <span className="text-[9px] text-slate-600">Lv.{playerLevel + 1}</span>
           </div>
         </div>
       </div>
@@ -213,41 +240,38 @@ const PlayerCard: React.FC<{
       {/* Daily Missions */}
       {user && dailyQuestDefs && dailyQuestProgress && dailyQuestDone && (
         <button onClick={onOpenQuests}
-                className="hud-panel rounded-2xl p-4 text-left cursor-pointer hover:border-amber-500/30 transition-all group"
-                style={{ borderColor: 'rgba(245,158,11,0.2)' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: '#F59E0B' }}>
-                Daily Mission
-              </p>
-              <p className="text-xs text-slate-400">デイリーミッション</p>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+                className="hud-panel rounded-2xl p-3 sm:p-4 text-left cursor-pointer transition-all hover:scale-[1.01] flex-shrink-0"
+                style={{ borderColor: 'rgba(249,115,22,0.25)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-black tracking-[0.2em] uppercase" style={{ color: '#F97316' }}>
+              Daily Mission
+            </p>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={{
-                    color: dailyQuestDone.size === dailyQuestDefs.length ? '#22C55E' : '#F59E0B',
-                    background: dailyQuestDone.size === dailyQuestDefs.length ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)',
+                    color: dailyQuestDone.size === dailyQuestDefs.length ? '#22C55E' : '#F97316',
+                    background: dailyQuestDone.size === dailyQuestDefs.length ? 'rgba(34,197,94,0.12)' : 'rgba(249,115,22,0.12)',
                   }}>
               {dailyQuestDone.size}/{dailyQuestDefs.length}
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {dailyQuestDefs.slice(0, 3).map(q => {
               const prog = dailyQuestProgress[q.id] || 0;
               const done = dailyQuestDone.has(q.id);
               return (
                 <div key={q.id} className="flex items-center gap-2">
-                  <span className="text-sm flex-shrink-0">{done ? '✅' : q.icon}</span>
+                  <span className="text-xs flex-shrink-0">{done ? '✅' : q.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between">
                       <span className={`text-[10px] font-bold truncate ${done ? 'text-green-400 line-through' : 'text-slate-300'}`}>
                         {q.title}
                       </span>
                       {!done && <span className="text-[9px] text-slate-500 ml-1 flex-shrink-0">{prog}/{q.target}</span>}
                     </div>
                     {!done && (
-                      <div className="w-full h-1 bg-slate-800 rounded-full mt-0.5">
-                        <div className="h-full rounded-full transition-all duration-500"
-                             style={{ width: `${Math.min(100, (prog / q.target) * 100)}%`, background: '#F59E0B' }} />
+                      <div className="w-full h-0.5 rounded-full mt-0.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <div className="h-full rounded-full transition-all"
+                             style={{ width: `${Math.min(100,(prog/q.target)*100)}%`, background: '#F97316' }} />
                       </div>
                     )}
                   </div>
@@ -258,197 +282,166 @@ const PlayerCard: React.FC<{
         </button>
       )}
 
-      {/* Bottom credit */}
-      <div className="text-center mt-auto">
-        <p className="text-[9px] text-slate-600 font-mono tracking-widest">
-          presented by onokomachi
-        </p>
+      <div className="mt-auto text-center">
+        <p className="text-[9px] text-slate-700 font-mono tracking-widest">presented by onokomachi</p>
       </div>
     </div>
   );
 };
 
-// ── Game Mode Button ───────────────────────────────────────────────────────
+// ── Mode Button ─────────────────────────────────────────────────────────────
 const ModeButton: React.FC<{
   mode: GameState;
-  icon: string;
+  Icon: React.FC<{ className?: string }>;
   label: string;
   labelEn: string;
   desc: string;
   badge?: number;
-  color: 'blue' | 'orange' | 'green';
+  accentColor: string;
+  glowColor: string;
+  borderColor: string;
   delay?: number;
   onSelect: (mode: GameState) => void;
-}> = ({ mode, icon, label, labelEn, desc, badge, color, delay = 0, onSelect }) => {
-  const colorMap = {
-    blue:   { border: 'rgba(14,165,233,0.35)', glow: 'rgba(14,165,233,0.2)',  accent: '#0EA5E9', bg: 'rgba(14,165,233,0.06)'   },
-    orange: { border: 'rgba(249,115,22,0.35)',  glow: 'rgba(249,115,22,0.2)',   accent: '#F97316', bg: 'rgba(249,115,22,0.06)'   },
-    green:  { border: 'rgba(34,197,94,0.35)',   glow: 'rgba(34,197,94,0.2)',    accent: '#22C55E', bg: 'rgba(34,197,94,0.06)'    },
-  };
-  const c = colorMap[color];
-
-  return (
-    <button
-      onClick={() => onSelect(mode)}
-      className="relative w-full rounded-2xl p-5 text-left flex items-center gap-4 group overflow-hidden transition-all duration-250 animate-slide-up"
-      style={{
-        background: c.bg,
-        border: `2px solid ${c.border}`,
-        boxShadow: `0 4px 16px ${c.glow}`,
-        animationDelay: `${delay}ms`,
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 6px 24px ${c.glow}, 0 0 0 1px ${c.accent}40`;
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.transform = '';
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px ${c.glow}`;
-      }}
-    >
-      {/* Badge */}
-      {(badge || 0) > 0 && (
-        <div className="absolute top-3 right-3 bg-red-500 text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
-          {badge}
-        </div>
-      )}
-
-      {/* Icon */}
-      <div className="text-4xl w-12 flex-shrink-0 text-center group-hover:scale-110 transition-transform duration-200">
-        {icon}
+}> = ({ mode, Icon, label, labelEn, desc, badge, accentColor, glowColor, borderColor, delay = 0, onSelect }) => (
+  <button
+    onClick={() => onSelect(mode)}
+    className="relative w-full rounded-xl sm:rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3 sm:gap-4 group overflow-hidden
+               transition-all duration-200 hover:scale-[1.015] hover:brightness-110 active:scale-[0.99]"
+    style={{
+      background: `rgba(${accentColor},0.06)`,
+      border: `2px solid ${borderColor}`,
+      boxShadow: `0 3px 14px ${glowColor}`,
+      animationDelay: `${delay}ms`,
+    }}
+  >
+    {badge !== undefined && badge > 0 && (
+      <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-5 h-5
+                      flex items-center justify-center animate-pulse z-10">
+        {badge}
       </div>
+    )}
 
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 mb-0.5">
-          <span className="text-xl font-black text-white">{label}</span>
-          <span className="text-xs font-bold tracking-widest" style={{ color: c.accent }}>{labelEn}</span>
-        </div>
-        <p className="text-xs text-slate-400">{desc}</p>
+    {/* Icon container */}
+    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+         style={{ background: borderColor, boxShadow: `0 4px 12px ${glowColor}` }}>
+      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+    </div>
+
+    <div className="flex-1 min-w-0">
+      <div className="flex items-baseline gap-1.5 mb-0.5">
+        <span className="text-base sm:text-lg font-black text-white">{label}</span>
+        <span className="text-[10px] sm:text-xs font-black tracking-widest" style={{ color: accentColor === '249,115,22' ? '#FB923C' : '#38BDF8' }}>
+          {labelEn}
+        </span>
       </div>
+      <p className="text-[10px] sm:text-xs text-slate-400 truncate">{desc}</p>
+    </div>
 
-      {/* Arrow */}
-      <svg className="w-5 h-5 flex-shrink-0 text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
-           fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  );
-};
+    <svg className="w-4 h-4 flex-shrink-0 text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
+);
 
-// ── Main Component ─────────────────────────────────────────────────────────
+// ── Main Component ──────────────────────────────────────────────────────────
 const MainMenu: React.FC<MainMenuProps> = ({
   onSelectMode, playerLevel, playerExp, expForNextLevel,
   user, mathPoints, onLogout, onOpenRanking,
   loginStreak, onOpenQuests, onOpenLoginBonus,
   canAccessGameMaster, onOpenGameMaster,
   dailyQuestDefs, dailyQuestProgress, dailyQuestDone,
-  onOpenClassBattle, hasStudentProfile, srsReviewCount, onOpenWeakness, onOpenItemShop,
-  equippedTitleName,
-}) => {
-  return (
-    <div className="w-full h-full flex flex-col">
-      {/* Top navigation bar */}
-      <TopBar
-        user={user}
-        mathPoints={mathPoints}
-        loginStreak={loginStreak}
-        onLogout={onLogout}
-        onOpenLoginBonus={onOpenLoginBonus}
-        onOpenRanking={onOpenRanking}
-        onOpenQuests={onOpenQuests}
-        onOpenWeakness={onOpenWeakness}
-        onOpenItemShop={onOpenItemShop}
-        onOpenClassBattle={onOpenClassBattle}
-        hasStudentProfile={hasStudentProfile}
-        canAccessGameMaster={canAccessGameMaster}
-        onOpenGameMaster={onOpenGameMaster}
-        equippedTitleName={equippedTitleName}
-      />
+  onOpenClassBattle, hasStudentProfile, srsReviewCount,
+  onOpenWeakness, onOpenItemShop, equippedTitleName,
+}) => (
+  <div className="w-full h-full flex flex-col overflow-hidden">
+    <TopBar
+      user={user} mathPoints={mathPoints} loginStreak={loginStreak}
+      onLogout={onLogout} onOpenLoginBonus={onOpenLoginBonus}
+      onOpenRanking={onOpenRanking} onOpenQuests={onOpenQuests}
+      onOpenWeakness={onOpenWeakness} onOpenItemShop={onOpenItemShop}
+      onOpenClassBattle={onOpenClassBattle} hasStudentProfile={hasStudentProfile}
+      canAccessGameMaster={canAccessGameMaster} onOpenGameMaster={onOpenGameMaster}
+      equippedTitleName={equippedTitleName}
+    />
 
-      {/* Body: 2-column on lg (iPad landscape) */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
+    {/* Body */}
+    <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
 
-        {/* ── LEFT COLUMN: Player Card ── */}
-        <div className="lg:w-72 xl:w-80 flex-shrink-0 p-4 lg:p-5 overflow-y-auto border-r"
-             style={{ borderColor: 'rgba(56,189,248,0.1)' }}>
-          <PlayerCard
-            user={user}
-            playerLevel={playerLevel}
-            playerExp={playerExp}
-            expForNextLevel={expForNextLevel}
-            mathPoints={mathPoints}
-            loginStreak={loginStreak}
-            dailyQuestDefs={dailyQuestDefs}
-            dailyQuestProgress={dailyQuestProgress}
-            dailyQuestDone={dailyQuestDone}
-            onOpenQuests={onOpenQuests}
-            onOpenLoginBonus={onOpenLoginBonus}
-            onSelectMode={onSelectMode}
+      {/* ── Left: Player Card (hidden on small phones, shown sm+) ── */}
+      <div className="hidden sm:flex flex-col lg:w-64 xl:w-72 flex-shrink-0 p-3 sm:p-4 overflow-y-auto border-b lg:border-b-0 lg:border-r"
+           style={{ borderColor: 'rgba(249,115,22,0.12)' }}>
+        <PlayerCard
+          user={user} playerLevel={playerLevel} playerExp={playerExp}
+          expForNextLevel={expForNextLevel} mathPoints={mathPoints}
+          loginStreak={loginStreak} dailyQuestDefs={dailyQuestDefs}
+          dailyQuestProgress={dailyQuestProgress} dailyQuestDone={dailyQuestDone}
+          onOpenQuests={onOpenQuests} onOpenLoginBonus={onOpenLoginBonus}
+          onSelectMode={onSelectMode}
+        />
+      </div>
+
+      {/* ── Right: Game Modes ── */}
+      <div className="flex-1 flex flex-col justify-center p-3 sm:p-4 lg:p-6 overflow-y-auto min-h-0">
+        {/* Section label */}
+        <div className="mb-3 sm:mb-4">
+          <p className="text-[9px] sm:text-[10px] font-black tracking-[0.4em] uppercase mb-0.5"
+             style={{ color: '#F97316' }}>
+            SELECT MODE
+          </p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#38BDF8', letterSpacing: '0.05em' }}>
+            GAME SELECT
+          </h2>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-2xl">
+          <ModeButton
+            mode="deck_building" Icon={IconSword}
+            label="バトル" labelEn="BATTLE"
+            desc="デッキを組んでCPUやプレイヤーと対戦"
+            accentColor="56,189,248" glowColor="rgba(56,189,248,0.18)"
+            borderColor="rgba(56,189,248,0.4)"
+            delay={0} onSelect={onSelectMode}
+          />
+          <ModeButton
+            mode="practice_mode" Icon={IconBook}
+            label="練習" labelEn="PRACTICE"
+            desc="分野別に問題を解いて実力アップ"
+            badge={srsReviewCount}
+            accentColor="249,115,22" glowColor="rgba(249,115,22,0.18)"
+            borderColor="rgba(249,115,22,0.4)"
+            delay={60} onSelect={onSelectMode}
+          />
+          <ModeButton
+            mode="card_shop" Icon={IconShop}
+            label="ショップ" labelEn="SHOP"
+            desc="EPでカードパックを購入してデッキを強化"
+            accentColor="34,197,94" glowColor="rgba(34,197,94,0.15)"
+            borderColor="rgba(34,197,94,0.35)"
+            delay={120} onSelect={onSelectMode}
           />
         </div>
 
-        {/* ── RIGHT COLUMN: Game Modes ── */}
-        <div className="flex-1 p-4 lg:p-6 flex flex-col justify-center overflow-y-auto">
-
-          {/* Section header */}
-          <div className="mb-5">
-            <p className="text-[10px] text-sky-400 tracking-[0.4em] uppercase font-bold mb-1">
-              SELECT MODE
-            </p>
-            <h2 className="text-3xl lg:text-4xl font-black text-hologram">
-              GAME SELECT
-            </h2>
-          </div>
-
-          {/* Mode buttons */}
-          <div className="flex flex-col gap-3 max-w-2xl">
-            <ModeButton
-              mode="deck_building"
-              icon="⚔️"
-              label="バトル"
-              labelEn="BATTLE"
-              desc="デッキを組んでCPUやプレイヤーと対戦"
-              color="blue"
-              delay={0}
-              onSelect={onSelectMode}
-            />
-            <ModeButton
-              mode="practice_mode"
-              icon="📖"
-              label="練習"
-              labelEn="PRACTICE"
-              desc="分野別に問題を解いて実力アップ"
-              badge={srsReviewCount}
-              color="orange"
-              delay={80}
-              onSelect={onSelectMode}
-            />
-            <ModeButton
-              mode="card_shop"
-              icon="🎴"
-              label="ショップ"
-              labelEn="SHOP"
-              desc="EPでカードパックを購入してデッキを強化"
-              color="green"
-              delay={160}
-              onSelect={onSelectMode}
-            />
-          </div>
-
-          {/* Guest notice */}
+        {/* Guest / mobile EP */}
+        <div className="mt-3 sm:mt-4 flex flex-col gap-2 max-w-2xl">
           {!user && (
-            <div className="mt-5 max-w-2xl">
-              <button onClick={() => onSelectMode('login_screen')}
-                      className="w-full text-xs text-sky-400 border border-sky-500/20 px-4 py-2.5 rounded-xl hover:bg-sky-900/20 transition-colors font-bold tracking-wider">
-                ログインしてランキング・対戦・クラス対抗に参加する
-              </button>
-            </div>
+            <button onClick={() => onSelectMode('login_screen')}
+                    className="w-full text-xs font-bold px-4 py-2.5 rounded-xl border transition-colors hover:bg-sky-900/20"
+                    style={{ color: '#38BDF8', borderColor: 'rgba(56,189,248,0.2)' }}>
+              ログインしてランキング・対戦・クラス対抗に参加する
+            </button>
+          )}
+          {/* Mobile EP (only visible on phones where left col is hidden) */}
+          {user && mathPoints !== undefined && (
+            <p className="sm:hidden text-center text-xs font-black" style={{ color: '#F59E0B' }}>
+              EP {mathPoints.toLocaleString()}　Lv.{playerLevel}
+            </p>
           )}
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default MainMenu;

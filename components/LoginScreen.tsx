@@ -156,9 +156,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4 lg:p-8">
+    <div className="w-full h-full flex items-center justify-center p-3 sm:p-4 lg:p-8 overflow-y-auto">
       {/* === iPad landscape: side-by-side === */}
-      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 animate-slide-up">
+      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-6 lg:gap-12 animate-slide-up py-2">
 
         {/* ── LEFT: Branding ── */}
         <div className="flex-1 text-center lg:text-left">
@@ -168,41 +168,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           </p>
 
           {/* Title */}
-          <h1 className="text-[clamp(5rem,14vw,9rem)] leading-none font-black text-hologram mb-2">
-            BATTLE
-          </h1>
-          <div className="flex items-center gap-3 lg:justify-start justify-center mb-6">
-            <div className="h-1 w-12 rounded-full" style={{ background: '#F97316' }} />
-            <h2 className="text-[clamp(3rem,8vw,5.5rem)] leading-none font-black"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#F97316' }}>
-              -ENG
-            </h2>
-            <div className="h-1 w-12 rounded-full" style={{ background: '#F97316' }} />
+          <div className="flex items-baseline gap-3 lg:justify-start justify-center mb-3">
+            <h1 className="text-[clamp(3.5rem,10vw,7rem)] leading-none font-black"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#F97316', letterSpacing: '0.04em' }}>
+              Battle
+            </h1>
+            <h1 className="text-[clamp(3.5rem,10vw,7rem)] leading-none font-black"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#38BDF8', letterSpacing: '0.04em' }}>
+              ENG
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 lg:justify-start justify-center mb-4">
+            <div className="h-0.5 w-8 rounded-full" style={{ background: 'rgba(249,115,22,0.5)' }} />
+            <span className="text-[10px] font-bold tracking-[0.3em] uppercase" style={{ color: '#FB923C' }}>
+              English Battle Platform
+            </span>
+            <div className="h-0.5 w-8 rounded-full" style={{ background: 'rgba(56,189,248,0.5)' }} />
           </div>
 
           {/* Tagline */}
-          <p className="text-base text-slate-300 font-bold tracking-wide mb-2">
+          <p className="text-sm sm:text-base font-bold tracking-wide mb-1" style={{ color: '#FB923C' }}>
             英語でバトル。実力を証明せよ。
           </p>
-          <p className="text-sm text-slate-500 tracking-wider">
+          <p className="text-xs sm:text-sm text-slate-400 tracking-wider">
             全国のプレイヤーと対戦・ランキング競争
           </p>
 
           {/* Feature pills */}
-          <div className="flex flex-wrap gap-2 mt-6 justify-center lg:justify-start">
-            {['バトルモード', '練習モード', 'クラス対抗', 'ランキング'].map(f => (
-              <span key={f}
+          <div className="flex flex-wrap gap-2 mt-4 sm:mt-5 justify-center lg:justify-start">
+            {[
+              { label: 'バトルモード', color: '#38BDF8' },
+              { label: '練習モード',   color: '#FB923C' },
+              { label: 'クラス対抗',   color: '#F59E0B' },
+              { label: 'ランキング',   color: '#38BDF8' },
+            ].map(f => (
+              <span key={f.label}
                 className="px-3 py-1 rounded-full text-xs font-bold border"
-                style={{ borderColor: 'rgba(56,189,248,0.3)', color: '#38BDF8', background: 'rgba(14,165,233,0.08)' }}
+                style={{ borderColor: `${f.color}40`, color: f.color, background: `${f.color}10` }}
               >
-                {f}
+                {f.label}
               </span>
             ))}
           </div>
         </div>
 
         {/* ── RIGHT: Login Panel ── */}
-        <div className="w-full lg:w-80 xl:w-96">
+        <div className="w-full sm:w-96 lg:w-80 xl:w-96 flex-shrink-0">
           <div className="hud-panel rounded-2xl p-7 shadow-2xl"
                style={{ boxShadow: '0 0 40px rgba(14,165,233,0.15), 0 8px 32px rgba(0,0,0,0.5)' }}>
 

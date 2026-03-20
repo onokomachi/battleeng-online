@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BATTLE-ENG ONLINE</title>
+    <title>Battle ENG ONLINE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700;900&family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -40,53 +40,54 @@ body {
 
 /* === Sports Card Panel === */
 .hud-panel {
-  background: rgba(15, 36, 68, 0.92);
+  background: rgba(12, 26, 50, 0.93);
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(249, 115, 22, 0.08);
 }
 
-/* === Athletic Title === */
+/* === Athletic Title (Battle ENG) === */
 .text-hologram {
   font-family: 'Bebas Neue', sans-serif;
-  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 40%, #F97316 100%);
+  background: linear-gradient(120deg, #38BDF8 0%, #F97316 60%, #FB923C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 12px rgba(14, 165, 233, 0.5));
+  filter: drop-shadow(0 2px 14px rgba(249, 115, 22, 0.4));
   letter-spacing: 0.05em;
 }
 
-/* === Primary Action Button === */
+/* === Primary Button (sky blue) === */
 .btn-tactical {
   background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   border: none;
   color: #fff;
   font-weight: 800;
   font-family: 'Noto Sans JP', 'Inter', sans-serif;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .btn-tactical:hover {
   background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.55), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .btn-tactical:active { transform: translateY(0); }
 
-/* === Orange Accent Button === */
+/* === Orange Button (primary CTA) === */
 .btn-orange {
-  background: linear-gradient(135deg, #F97316 0%, #EA6B0A 100%);
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
   border: none;
   color: #fff;
   font-weight: 800;
-  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .btn-orange:hover {
   background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(249, 115, 22, 0.6);
+  box-shadow: 0 8px 28px rgba(249, 115, 22, 0.65);
 }
+.btn-orange:active { transform: translateY(0); }
 
 /* === Sports Card (Answer Options) === */
 .card-sports {
@@ -204,6 +205,27 @@ body {
 .streak-badge {
   background: linear-gradient(135deg, #F97316, #EF4444);
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
+}
+
+/* ===== Responsive: prevent overflow on all screen sizes ===== */
+* { box-sizing: border-box; }
+
+/* Allow inner scroll without body scroll */
+.overflow-y-auto { overflow-y: auto; }
+.overflow-y-auto::-webkit-scrollbar { width: 4px; }
+.overflow-y-auto::-webkit-scrollbar-track { background: transparent; }
+.overflow-y-auto::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.3); border-radius: 2px; }
+
+/* Scale-down fallback for tiny viewports */
+@media (max-height: 500px) {
+  .hud-panel { padding: 8px !important; }
+  .text-hologram { filter: none; }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) {
+  .btn-tactical:hover, .btn-orange:hover { transform: none; }
+  button { min-height: 40px; }
 }
 </style>
 </head>

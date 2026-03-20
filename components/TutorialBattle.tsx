@@ -25,7 +25,7 @@ interface TutorialStep {
 
 const STEPS: TutorialStep[] = [
   {
-    title: 'バトルマスへようこそ！',
+    title: 'Battle ENG へようこそ！',
     description: 'このゲームでは英語の問題を解いてバトルします。\n正解すると相手にダメージ、不正解だと自分がダメージを受けます。',
     highlight: 'concept',
   },
@@ -57,7 +57,7 @@ const STEPS: TutorialStep[] = [
   },
   {
     title: 'チュートリアル完了！',
-    description: '基本操作はマスターしました！\n\n練習モード: 分野別に問題を解いて実力アップ\nバトル: デッキを組んでCPUやプレイヤーと対戦\nショップ: MPでカードパックを購入\n\nさあ、バトルに出発しましょう！',
+    description: '基本操作はマスターしました！\n\n練習モード: 分野別に問題を解いて実力アップ\nバトル: デッキを組んでCPUやプレイヤーと対戦\nショップ: EPでカードパックを購入\n\nさあ、Battle ENG に出発しましょう！',
     highlight: 'complete',
   },
 ];
