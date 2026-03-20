@@ -1,25 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * SpeedBackground — 疾走感のある動的スポーツ背景
+ * SpeedBackground — 漫画的スピードライン背景（超太ストライプ）
  *
- * デザイン:
- *   - ディープネイビーグラデーション（スポーツアリーナ）
- *   - 斜め方向に流れるスピードライン（スカイブルー＋オレンジ）
- *   - 奥行き感を出す短い残光パーティクル
- *   - 省電力: タブ非表示で停止、prefers-reduced-motion 対応
+ * 参照画像のような太い平行斜め帯が高速で流れる表現。
+ * 色は現在のUIカラー：ディープネイビー地 + スカイブルー + オレンジ帯
  */
 
-interface SpeedLine {
-  x: number;      // 現在X位置
-  y: number;      // 固定Y位置
-  len: number;    // 線の長さ
-  speed: number;  // 移動速度
-  alpha: number;  // 透明度
-  width: number;  // 線幅
-  color: 'blue' | 'orange' | 'white';
-  angle: number;  // ラジアン（斜め角度）
+interface Stripe {
+  y: number;       // 上端Y（画面座標）
+  width: number;   // 帯の幅
+  speed: number;   // 移動速度
+  color: 'blue' | 'blue-light' | 'orange' | 'navy';
+  alpha: number;
 }
+
+// 斜め角度（左下→右上）
+const ANGLE_DEG = -28;
+const ANGLE = (ANGLE_DEG * Math.PI) / 180;
+const TAN   = Math.tan(-ANGLE);         // ≈ 0.53
 
 const GravityBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,48 +31,123 @@ const GravityBackground: React.FC = () => {
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width  = W;
+    canvas.height = H;
 
-    // ── Spawn a speed line ───────────────────────────────────────
-    const ANGLE = -Math.PI / 9; // 約 −20°（右斜め上方向）
-    const cosA = Math.cos(ANGLE);
-    const sinA = Math.sin(ANGLE);
-
-    const spawnLine = (): SpeedLine => {
+    // ── Stripe generation ──────────────────────────────────────
+    /**
+     * ストライプは傾いた帯として描画。
+     * 各帯は「画面横幅 + 高さ の対角線」をカバーする長い線として描く。
+     * y は帯の上辺の Y 位置（Xオフセット付き）
+     */
+    const spawnStripe = (startY?: number): Stripe => {
       const roll = Math.random();
-      const color: SpeedLine['color'] =
-        roll < 0.65 ? 'blue' : roll < 0.88 ? 'white' : 'orange';
+      const color: Stripe['color'] =
+        roll < 0.40 ? 'blue'
+        : roll < 0.65 ? 'blue-light'
+        : roll < 0.78 ? 'navy'
+        : 'orange';
       return {
-        x: -200 - Math.random() * width * 0.5,       // 画面左外からスタート
-        y: Math.random() * (height * 1.6) - height * 0.3,
-        len: 60 + Math.random() * 220,
-        speed: 3.5 + Math.random() * 6,
-        alpha: 0.08 + Math.random() * 0.22,
-        width: 0.5 + Math.random() * 1.5,
+        y: startY ?? Math.random() * (H * 2.5) - H * 0.8,
+        width: color === 'orange' ? 18 + Math.random() * 28
+             : color === 'navy'   ? 30 + Math.random() * 60
+             : color === 'blue'   ? 22 + Math.random() * 50
+             :                      8  + Math.random() * 20,
+        speed: 2.5 + Math.random() * 3.5,
+        alpha: color === 'navy' ? 0.3 + Math.random() * 0.25
+             : color === 'orange' ? 0.55 + Math.random() * 0.35
+             : 0.25 + Math.random() * 0.35,
         color,
-        angle: ANGLE + (Math.random() - 0.5) * 0.08, // わずかなばらつき
       };
     };
 
-    const LINE_COUNT = Math.min(80, Math.floor((width * height) / 12000));
-    const lines: SpeedLine[] = Array.from({ length: LINE_COUNT }, () => {
-      const l = spawnLine();
-      l.x = Math.random() * width * 1.8 - width * 0.4; // 最初は画面内にも配置
-      return l;
-    });
+    // 画面を埋めるストライプ群を初期化
+    const STRIPE_COUNT = 18;
+    const stripes: Stripe[] = [];
+    for (let i = 0; i < STRIPE_COUNT; i++) {
+      stripes.push(spawnStripe(Math.random() * H * 2.2 - H * 0.6));
+    }
 
+    // ── Color map ──────────────────────────────────────────────
+    const colorOf = (s: Stripe, a: number): string => {
+      switch (s.color) {
+        case 'blue':       return `rgba(56,189,248,${a})`;
+        case 'blue-light': return `rgba(125,211,252,${a})`;
+        case 'orange':     return `rgba(249,115,22,${a})`;
+        case 'navy':       return `rgba(14,50,90,${a})`;
+      }
+    };
+
+    // ── Draw a diagonal stripe ─────────────────────────────────
+    /**
+     * 帯を平行四辺形で描く。
+     * 傾き方向: 右に行くほど上に上がる（左下→右上）
+     * 左端の帯の上辺Y = s.y - TAN * 0 = s.y
+     * 右端の帯の上辺Y = s.y - TAN * W
+     */
+    const drawStripe = (s: Stripe) => {
+      const dx = TAN * W;           // Yシフト量(水平方向W分)
+      // 四頂点
+      const x0 = -100, y0 = s.y;
+      const x1 = W + 100, y1 = s.y - TAN * (W + 200);
+      const x2 = x1, y2 = y1 + s.width;
+      const x3 = x0, y3 = y0 + s.width;
+
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.closePath();
+
+      // グラデーション（帯の厚み方向）
+      const mid = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 + s.width * 0.5 };
+      const perp = { x: Math.cos(ANGLE + Math.PI / 2), y: Math.sin(ANGLE + Math.PI / 2) };
+      const grad = ctx.createLinearGradient(
+        mid.x - perp.x * s.width * 0.5, mid.y - perp.y * s.width * 0.5,
+        mid.x + perp.x * s.width * 0.5, mid.y + perp.y * s.width * 0.5,
+      );
+      grad.addColorStop(0,   colorOf(s, 0));
+      grad.addColorStop(0.2, colorOf(s, s.alpha));
+      grad.addColorStop(0.5, colorOf(s, s.alpha * 1.15));
+      grad.addColorStop(0.8, colorOf(s, s.alpha));
+      grad.addColorStop(1,   colorOf(s, 0));
+      ctx.fillStyle = grad;
+      ctx.fill();
+    };
+
+    // ── Background ─────────────────────────────────────────────
+    const drawBg = () => {
+      const bg = ctx.createLinearGradient(0, 0, W * 0.5, H);
+      bg.addColorStop(0,   '#081628');
+      bg.addColorStop(0.5, '#0B1E38');
+      bg.addColorStop(1,   '#081628');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+    };
+
+    // ── Resize ────────────────────────────────────────────────
+    const handleResize = () => {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width  = W;
+      canvas.height = H;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // ── Static render (reduced-motion) ─────────────────────────
+    if (prefersReducedMotion) {
+      drawBg();
+      stripes.forEach(s => drawStripe(s));
+      return () => window.removeEventListener('resize', handleResize);
+    }
+
+    // ── Animation ─────────────────────────────────────────────
     let animFrameId: number | null = null;
     let isPaused = false;
 
-    const handleResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
-    };
     const handleVisibility = () => {
       if (document.hidden) {
         isPaused = true;
@@ -83,111 +157,32 @@ const GravityBackground: React.FC = () => {
         if (animFrameId === null) animFrameId = requestAnimationFrame(animate);
       }
     };
-    window.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // ── Color lookup ──────────────────────────────────────────────
-    const lineColor = (l: SpeedLine, alpha: number) => {
-      if (l.color === 'blue')   return `rgba(56,189,248,${alpha})`;
-      if (l.color === 'orange') return `rgba(249,115,22,${alpha})`;
-      return `rgba(255,255,255,${alpha})`;
-    };
-
-    // ── Static frame (reduced-motion) ────────────────────────────
-    const drawStatic = () => {
-      const bg = ctx.createLinearGradient(0, 0, 0, height);
-      bg.addColorStop(0, '#0B1D35');
-      bg.addColorStop(1, '#0F2444');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, width, height);
-
-      lines.forEach(l => {
-        const cos = Math.cos(l.angle); const sin = Math.sin(l.angle);
-        const x2 = l.x + cos * l.len;
-        const y2 = l.y + sin * l.len;
-        const grad = ctx.createLinearGradient(l.x, l.y, x2, y2);
-        grad.addColorStop(0, lineColor(l, 0));
-        grad.addColorStop(0.5, lineColor(l, l.alpha * 0.6));
-        grad.addColorStop(1, lineColor(l, 0));
-        ctx.beginPath();
-        ctx.moveTo(l.x, l.y);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = l.width;
-        ctx.stroke();
-      });
-    };
-
-    if (prefersReducedMotion) {
-      drawStatic();
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        document.removeEventListener('visibilitychange', handleVisibility);
-      };
-    }
-
-    // ── Animated frame ───────────────────────────────────────────
-    let time = 0;
     const animate = () => {
       if (isPaused) return;
-      time += 0.012;
 
-      // Background gradient
-      const bg = ctx.createLinearGradient(0, 0, width * 0.6, height);
-      bg.addColorStop(0, '#0B1D35');
-      bg.addColorStop(0.5, '#0E2040');
-      bg.addColorStop(1, '#0B1D35');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, width, height);
+      drawBg();
 
-      // Subtle orange vignette from center-left
-      const vign = ctx.createRadialGradient(
-        width * 0.35, height * 0.5, 0,
-        width * 0.35, height * 0.5, width * 0.65
-      );
-      vign.addColorStop(0, 'rgba(249,115,22,0.04)');
+      // Orange subtle center glow
+      const vign = ctx.createRadialGradient(W * 0.3, H * 0.5, 0, W * 0.3, H * 0.5, W * 0.7);
+      vign.addColorStop(0, 'rgba(249,115,22,0.05)');
       vign.addColorStop(1, 'transparent');
       ctx.fillStyle = vign;
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, W, H);
 
-      // Draw + update speed lines
-      lines.forEach(l => {
-        const cos = Math.cos(l.angle);
-        const sin = Math.sin(l.angle);
+      // Draw stripes (sorted by alpha for correct layering)
+      stripes
+        .slice()
+        .sort((a, b) => (a.color === 'navy' ? -1 : b.color === 'navy' ? 1 : 0))
+        .forEach(s => drawStripe(s));
 
-        // Tail → Head gradient
-        const x2 = l.x + cos * l.len;
-        const y2 = l.y + sin * l.len;
-        const grad = ctx.createLinearGradient(l.x, l.y, x2, y2);
-        grad.addColorStop(0, lineColor(l, 0));
-        grad.addColorStop(0.3, lineColor(l, l.alpha * 0.4));
-        grad.addColorStop(0.8, lineColor(l, l.alpha));
-        grad.addColorStop(1, lineColor(l, l.alpha * 0.6));
-        ctx.beginPath();
-        ctx.moveTo(l.x, l.y);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = l.width;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // Head spark (small bright dot)
-        if (l.alpha > 0.15) {
-          ctx.beginPath();
-          ctx.arc(x2, y2, l.width * 0.9, 0, Math.PI * 2);
-          ctx.fillStyle = lineColor(l, l.alpha * 0.8);
-          ctx.fill();
-        }
-
-        // Move
-        l.x += cos * l.speed;
-        l.y += sin * l.speed;
-
-        // Recycle when off-screen
-        const offRight  = l.x > width  + 300;
-        const offBottom = l.y > height + 300;
-        if (offRight || offBottom) {
-          Object.assign(l, spawnLine());
+      // Update positions — stripes move diagonally (down-right)
+      stripes.forEach(s => {
+        s.y += s.speed;
+        // When the top of the stripe exits the bottom of screen, recycle
+        if (s.y > H + 200) {
+          Object.assign(s, spawnStripe(-s.width - 50));
         }
       });
 
@@ -207,7 +202,7 @@ const GravityBackground: React.FC = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ background: '#0B1D35' }}
+      style={{ background: '#081628' }}
     />
   );
 };

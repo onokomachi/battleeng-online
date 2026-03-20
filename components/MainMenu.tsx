@@ -27,28 +27,12 @@ interface MainMenuProps {
   equippedTitleName?: string | null;
 }
 
-// ── Single-color SVG silhouette icons ─────────────────────────────────────
-const IconSword: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M14.5 2.5L21 9l-1.5 1.5-1-1-7 7 1 1L11 19l-1.5 1.5-1-1-3.5 3.5H3v-2l3.5-3.5-1-1L7 15l1.5-1.5 1 1 7-7-1-1L17 5l1.5-1.5 1 1z" />
-    <path d="M17.5 6.5l-9 9" strokeWidth="0" />
-  </svg>
-);
-
-const IconBook: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C9.5 2 7.5 3 6 4.5V19c1.5-1 3.5-1.5 6-1.5s4.5.5 6 1.5V4.5C16.5 3 14.5 2 12 2zm0 14c-2 0-3.8.3-5 1V5.5C8.2 4.5 10 4 12 4s3.8.5 5 1.5V17c-1.2-.7-3-.9-5-1z" />
-    <path d="M11 7h2v6h-2z" />
-  </svg>
-);
-
-const IconShop: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M4 4h16l-1.5 9H5.5L4 4zm0 0H2M8 4l1 6M16 4l-1 6M5.5 13v6a1 1 0 001 1h11a1 1 0 001-1v-6" strokeLinecap="round" />
-    <path d="M6 4h12l-1.4 8.5H7.4L6 4z" />
-    <rect x="7" y="13" width="10" height="7" rx="1" />
-    <path d="M10 13v7M14 13v7" opacity=".4" />
-  </svg>
+// ── Letter badge icons (B / P / S) ─────────────────────────────────────────
+const LetterIcon: React.FC<{ letter: string; color: string }> = ({ letter, color }) => (
+  <span className="text-xl sm:text-2xl font-black leading-none select-none"
+        style={{ fontFamily: "'Bebas Neue', sans-serif", color, letterSpacing: '0.02em' }}>
+    {letter}
+  </span>
 );
 
 // ── Top Bar ────────────────────────────────────────────────────────────────
@@ -292,52 +276,53 @@ const PlayerCard: React.FC<{
 // ── Mode Button ─────────────────────────────────────────────────────────────
 const ModeButton: React.FC<{
   mode: GameState;
-  Icon: React.FC<{ className?: string }>;
+  letter: string;
   label: string;
   labelEn: string;
   desc: string;
   badge?: number;
-  accentColor: string;
+  accentHex: string;
   glowColor: string;
-  borderColor: string;
   delay?: number;
   onSelect: (mode: GameState) => void;
-}> = ({ mode, Icon, label, labelEn, desc, badge, accentColor, glowColor, borderColor, delay = 0, onSelect }) => (
+}> = ({ mode, letter, label, labelEn, desc, badge, accentHex, glowColor, delay = 0, onSelect }) => (
   <button
     onClick={() => onSelect(mode)}
-    className="relative w-full rounded-xl sm:rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3 sm:gap-4 group overflow-hidden
+    className="relative w-full rounded-xl p-2.5 sm:p-3 text-left flex items-center gap-3 group overflow-hidden
                transition-all duration-200 hover:scale-[1.015] hover:brightness-110 active:scale-[0.99]"
     style={{
-      background: `rgba(${accentColor},0.06)`,
-      border: `2px solid ${borderColor}`,
+      background: `${accentHex}09`,
+      border: `2px solid ${accentHex}40`,
       boxShadow: `0 3px 14px ${glowColor}`,
       animationDelay: `${delay}ms`,
     }}
   >
     {badge !== undefined && badge > 0 && (
-      <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-5 h-5
+      <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4
                       flex items-center justify-center animate-pulse z-10">
         {badge}
       </div>
     )}
 
-    {/* Icon container */}
-    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-         style={{ background: borderColor, boxShadow: `0 4px 12px ${glowColor}` }}>
-      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+    {/* Letter badge */}
+    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                    transition-transform duration-200 group-hover:scale-110"
+         style={{ background: `${accentHex}20`, border: `1.5px solid ${accentHex}50`,
+                  boxShadow: `0 2px 10px ${glowColor}` }}>
+      <LetterIcon letter={letter} color={accentHex} />
     </div>
 
     <div className="flex-1 min-w-0">
       <div className="flex items-baseline gap-1.5 mb-0.5">
-        <span className="text-base sm:text-lg font-black text-white">{label}</span>
-        <span className="text-[10px] sm:text-xs font-black tracking-widest" style={{ color: accentColor === '249,115,22' ? '#FB923C' : '#38BDF8' }}>
+        <span className="text-sm sm:text-base font-black text-white">{label}</span>
+        <span className="text-[9px] sm:text-[10px] font-black tracking-widest" style={{ color: accentHex }}>
           {labelEn}
         </span>
       </div>
-      <p className="text-[10px] sm:text-xs text-slate-400 truncate">{desc}</p>
+      <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">{desc}</p>
     </div>
 
-    <svg className="w-4 h-4 flex-shrink-0 text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
+    <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
          fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
@@ -395,30 +380,27 @@ const MainMenu: React.FC<MainMenuProps> = ({
           </h2>
         </div>
 
-        <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-2xl">
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
           <ModeButton
-            mode="deck_building" Icon={IconSword}
+            mode="deck_building" letter="B"
             label="バトル" labelEn="BATTLE"
             desc="デッキを組んでCPUやプレイヤーと対戦"
-            accentColor="56,189,248" glowColor="rgba(56,189,248,0.18)"
-            borderColor="rgba(56,189,248,0.4)"
+            accentHex="#38BDF8" glowColor="rgba(56,189,248,0.18)"
             delay={0} onSelect={onSelectMode}
           />
           <ModeButton
-            mode="practice_mode" Icon={IconBook}
+            mode="practice_mode" letter="P"
             label="練習" labelEn="PRACTICE"
             desc="分野別に問題を解いて実力アップ"
             badge={srsReviewCount}
-            accentColor="249,115,22" glowColor="rgba(249,115,22,0.18)"
-            borderColor="rgba(249,115,22,0.4)"
+            accentHex="#F97316" glowColor="rgba(249,115,22,0.18)"
             delay={60} onSelect={onSelectMode}
           />
           <ModeButton
-            mode="card_shop" Icon={IconShop}
+            mode="card_shop" letter="S"
             label="ショップ" labelEn="SHOP"
             desc="EPでカードパックを購入してデッキを強化"
-            accentColor="34,197,94" glowColor="rgba(34,197,94,0.15)"
-            borderColor="rgba(34,197,94,0.35)"
+            accentHex="#22C55E" glowColor="rgba(34,197,94,0.15)"
             delay={120} onSelect={onSelectMode}
           />
         </div>
