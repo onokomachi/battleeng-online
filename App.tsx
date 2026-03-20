@@ -1442,8 +1442,9 @@ const App: React.FC = () => {
         return (
           <CardShop
             mathPoints={mathPoints}
-            onBuyPack={(m, cost, _t) => {
-              const cards = CARD_DEFINITIONS.filter(c => !ownedCardIds.has(c.id) && c.mainCategory === m);
+            onBuyPack={(categories, cost, _t) => {
+              const catSet = new Set(categories);
+              const cards = CARD_DEFINITIONS.filter(c => !ownedCardIds.has(c.id) && catSet.has(c.mainCategory));
               if (mathPoints < cost || cards.length === 0) return cards.length === 0 ? [] : null;
               // エビデンスA: 可変報酬スケジュール — 3〜6枚ランダム + 20%でCRITICAL!（Skinner 1938）
               const isCritical = Math.random() < 0.2;
