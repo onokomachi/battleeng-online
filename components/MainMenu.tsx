@@ -383,14 +383,14 @@ const MainMenu: React.FC<MainMenuProps> = ({
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           <ModeButton
             mode="deck_building" letter="B"
-            label="バトル" labelEn="BATTLE"
+            label="Battle mode" labelEn="BATTLE"
             desc="デッキを組んでCPUやプレイヤーと対戦"
             accentHex="#38BDF8" glowColor="rgba(56,189,248,0.18)"
             delay={0} onSelect={onSelectMode}
           />
           <ModeButton
             mode="practice_mode" letter="P"
-            label="練習" labelEn="PRACTICE"
+            label="Practice mode" labelEn="PRACTICE"
             desc="分野別に問題を解いて実力アップ"
             badge={srsReviewCount}
             accentHex="#F97316" glowColor="rgba(249,115,22,0.18)"
@@ -398,7 +398,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
           />
           <ModeButton
             mode="card_shop" letter="S"
-            label="ショップ" labelEn="SHOP"
+            label="Shop mode" labelEn="SHOP"
             desc="EPでカードパックを購入してデッキを強化"
             accentHex="#22C55E" glowColor="rgba(34,197,94,0.15)"
             delay={120} onSelect={onSelectMode}
