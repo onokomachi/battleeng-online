@@ -11,6 +11,7 @@ import { BackIcon, PencilIcon, HomeIcon } from './Icons';
 interface ProblemScreenProps {
   category: string;
   subTopic: string;
+  initialProblems?: Problem[]; // master/custom mode で外から渡す
   onBack: (stats: SessionStats) => void;
   onHome: () => void;
 }
@@ -119,7 +120,7 @@ const PracticeSummary: React.FC<{ stats: SessionStats, subTopic: string, elapsed
     );
 };
 
-const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBack, onHome }) => {
+const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, initialProblems, onBack, onHome }) => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
@@ -177,11 +178,11 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, onBac
   }, [category, subTopic]);
 
   useEffect(() => {
-    const loadedProblems = getShuffledProblemSet(category, subTopic);
+    const loadedProblems = initialProblems ?? getShuffledProblemSet(category, subTopic);
     setProblems(loadedProblems);
     setIsLoading(false);
     setStartTime(Date.now());
-  }, [category, subTopic]);
+  }, [category, subTopic, initialProblems]);
 
   const currentProblem = problems[currentIndex] || null;
   const problemHint = currentProblem?.data?.hint;

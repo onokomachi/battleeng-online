@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import type { SessionStats, StudentProfile } from '../types';
+import type { Problem, SessionStats, StudentProfile } from '../types';
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
@@ -8,6 +8,7 @@ import MenuScreen from './MenuScreen';
 import ProblemScreen from './ProblemScreen';
 import RecordsScreen from './RecordsScreen';
 import { saveRecord } from '../services/recordService';
+import { getMultiCategoryProblemSet } from '../services/problemService';
 
 interface PracticeModeProps {
   onSessionComplete: (score: number) => void;
@@ -57,11 +58,17 @@ const submitRanking = async (
 
 const PracticeMode: React.FC<PracticeModeProps> = ({ onSessionComplete, db, user, studentProfile }) => {
   const [screen, setScreen] = useState<'menu' | 'problem' | 'records'>('menu');
-  const [selectedTopic, setSelectedTopic] = useState<{ category: string; subTopic: string } | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<{ category: string; subTopic: string; initialProblems?: Problem[] } | null>(null);
   const [overallStats, setOverallStats] = useState<SessionStats>({ correct: 0, incorrect: 0, totalScore: 0, problemCount: 0 });
 
   const handleSelectSubTopic = (category: string, subTopic: string) => {
     setSelectedTopic({ category, subTopic });
+    setScreen('problem');
+  };
+
+  const handleSelectSpecial = (categories: string[], label: string) => {
+    const problems = getMultiCategoryProblemSet(categories, 5);
+    setSelectedTopic({ category: 'special', subTopic: label, initialProblems: problems });
     setScreen('problem');
   };
 
@@ -105,6 +112,7 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ onSessionComplete, db, user
       <ProblemScreen
         category={selectedTopic.category}
         subTopic={selectedTopic.subTopic}
+        initialProblems={selectedTopic.initialProblems}
         onBack={handleProblemSessionBack}
         onHome={handleGoHome}
       />
@@ -118,6 +126,7 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ onSessionComplete, db, user
   return (
     <MenuScreen
       onSelectSubTopic={handleSelectSubTopic}
+      onSelectSpecial={handleSelectSpecial}
       onShowRecords={handleShowRecords}
       onExit={handleGoHome}
       db={db}

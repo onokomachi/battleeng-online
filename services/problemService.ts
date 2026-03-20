@@ -40,5 +40,17 @@ export const getShuffledProblemSet = (category: string, subTopic: string): Probl
       : allForCategory;
   }
 
-  return shuffleArray(filtered).slice(0, 10);
+  return shuffleArray(filtered).slice(0, 5);
+};
+
+/**
+ * Returns up to `count` shuffled problems drawn from multiple categories.
+ * Used by Master modes and Custom selection in Practice mode.
+ */
+export const getMultiCategoryProblemSet = (categories: string[], count: number = 5): Problem[] => {
+  const allProblems: Problem[] = [];
+  for (const cat of categories) {
+    allProblems.push(...(ENGLISH_PROBLEMS[cat] || []));
+  }
+  return shuffleArray(allProblems).slice(0, count);
 };
