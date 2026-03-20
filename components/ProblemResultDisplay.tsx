@@ -64,7 +64,7 @@ const ProblemResultDisplay: React.FC<ProblemResultDisplayProps> = ({
               <div className="w-[1px] h-6 bg-white/10"></div>
               <div className='flex flex-col items-center'>
                 <span className='text-[9px] sm:text-[10px] text-cyan-500 font-bold'>獲得</span>
-                <span className="text-sm sm:text-base font-bold font-mono text-amber-400">+{score}<span className="text-[10px] ml-0.5 text-amber-500/60">MP</span></span>
+                <span className="text-sm sm:text-base font-bold font-mono text-amber-400">+{score}<span className="text-[10px] ml-0.5 text-amber-500/60">EP</span></span>
               </div>
             </>
           )}
@@ -82,7 +82,7 @@ const ProblemResultDisplay: React.FC<ProblemResultDisplayProps> = ({
           <div>
             <p className="text-[10px] sm:text-xs text-cyan-400 mb-1 font-bold">正解</p>
             <p className="text-cyan-300 bg-slate-950/60 p-2 rounded-lg border border-cyan-400/20 break-all font-mono text-xs sm:text-sm">
-              {problemData.answer.replace(/;/g, ' | ')}
+              {String(Array.isArray(problemData.answer) ? problemData.answer.join(' ') : problemData.answer).replace(/;/g, ' | ')}
             </p>
           </div>
         </div>

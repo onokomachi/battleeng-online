@@ -36,7 +36,7 @@ const checkFirestoreConnection = async (): Promise<boolean> => {
   try {
     // Import getDocs/collection dynamically to test connectivity
     const { getDocs, collection, query, limit } = await import('firebase/firestore');
-    await getDocs(query(collection(db, '__health_check__'), limit(1)));
+    await getDocs(query(collection(db, 'connectivity_check'), limit(1)));
     firestoreReady = true;
     return true;
   } catch (e: any) {
