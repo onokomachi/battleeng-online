@@ -7,13 +7,13 @@ import { getStorage } from 'firebase/storage';
 
 // battleeng-online Firebase project config (from Firebase console)
 const firebaseConfig = {
-  apiKey: "AIzaSyDfr022IMbBXCJT_wM2UCmZqexv-KKMtEM",
-  authDomain: "battlemath-online.firebaseapp.com",
-  projectId: "battlemath-online",
-  storageBucket: "battlemath-online.firebasestorage.app",
-  messagingSenderId: "492702213499",
-  appId: "1:492702213499:web:7680fa2a44be90a77b89de",
-  measurementId: "G-19HQYHJJN9"
+  apiKey: "AIzaSyDLsEB_zROfusa19Hzy5gUFF6v5ilb8R64",
+  authDomain: "battleeng-online.firebaseapp.com",
+  projectId: "battleeng-online",
+  storageBucket: "battleeng-online.firebasestorage.app",
+  messagingSenderId: "103551205143",
+  appId: "1:103551205143:web:430929a347c333bbe54152",
+  measurementId: "G-WPGXMSNQN1"
 };
 
 let app: any, auth: any, db: any, storage: any, googleProvider: any, analytics: any;
@@ -45,7 +45,7 @@ const checkFirestoreConnection = async (): Promise<boolean> => {
       console.error(
         '%c[BattleENG] Firestoreデータベースが見つかりません。\n' +
         'Firebase Console → Firestore Database → 「データベースを作成」を実行してください。\n' +
-        'https://console.firebase.google.com/project/battlemath-online/firestore',
+        'https://console.firebase.google.com/project/battleeng-online/firestore',
         'color: #ff6b6b; font-size: 14px; font-weight: bold;'
       );
     } else {
