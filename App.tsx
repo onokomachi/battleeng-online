@@ -21,7 +21,7 @@ import {
   runTransaction, where, orderBy, limit, Timestamp, deleteDoc
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile } from './types';
+import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile, Problem } from './types';
 import {
   CARD_DEFINITIONS, HAND_SIZE, DECK_SIZE,
   INITIAL_HP, calcDamage, ADMIN_EMAILS, GAMEMASTER_PASSWORD,
@@ -44,6 +44,7 @@ import BadgeNotification from './components/BadgeNotification';
 import LoginBonusModal, { getLoginReward } from './components/LoginBonusModal';
 import ClassBattleBoard from './components/ClassBattleBoard';
 import { addIncorrectToSrs, getDueCount } from './services/spacedRepetitionService';
+import { getSrsProblemsForReview } from './services/problemService';
 import { recordAttempt, getCategoryWeights } from './services/weaknessAnalysisService';
 import WeaknessPanel from './components/WeaknessPanel';
 import ItemShop from './components/ItemShop';
@@ -198,6 +199,7 @@ const App: React.FC = () => {
   const [loginBonusClaimed, setLoginBonusClaimed] = useState(false);
   const [showClassBattle, setShowClassBattle] = useState(false);
   const [showWeaknessPanel, setShowWeaknessPanel] = useState(false);
+  const [srsReviewProblems, setSrsReviewProblems] = useState<Problem[] | null>(null);
   const [showItemShop, setShowItemShop] = useState(false);
   const [ownedShopItems, setOwnedShopItems] = useState<Set<string>>(() => {
     try {
@@ -1396,10 +1398,11 @@ const App: React.FC = () => {
       case 'practice_mode':
         return (
           <PracticeMode
-            onSessionComplete={pts => { setMathPoints(p => p + pts); setGameState('main_menu'); }}
+            onSessionComplete={pts => { setMathPoints(p => p + pts); setSrsReviewProblems(null); setGameState('main_menu'); }}
             db={db}
             user={user}
             studentProfile={studentProfile}
+            srsReviewProblems={srsReviewProblems ?? undefined}
           />
         );
 
@@ -1622,7 +1625,15 @@ const App: React.FC = () => {
           />
         )}
         {showWeaknessPanel && (
-          <WeaknessPanel onClose={() => setShowWeaknessPanel(false)} />
+          <WeaknessPanel
+            onClose={() => setShowWeaknessPanel(false)}
+            onStartSrsReview={() => {
+              const problems = getSrsProblemsForReview();
+              setSrsReviewProblems(problems);
+              setShowWeaknessPanel(false);
+              setGameState('practice_mode');
+            }}
+          />
         )}
         {showItemShop && (
           <ItemShop

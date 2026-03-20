@@ -284,12 +284,33 @@ const assignAbility = (card: ProblemCard): Ability | undefined => {
   return undefined;
 };
 
+const shuffleArray = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
 const processProblems = (): ProblemCard[] => {
   const allProblems: ProblemCard[] = [];
   let idCounter = 0;
 
   for (const [mainCat, problems] of Object.entries(ENGLISH_PROBLEMS)) {
-    for (const problem of problems) {
+    for (const rawProblem of problems) {
+      // input problems with multi-word answers (sentences) → convert to sort type
+      let problem = rawProblem;
+      if (
+        rawProblem.type === 'input' &&
+        typeof rawProblem.answer === 'string' &&
+        rawProblem.answer.trim().split(/\s+/).length >= 3
+      ) {
+        const words = rawProblem.answer.trim().split(/\s+/);
+        problem = {
+          ...rawProblem,
+          type: 'sort',
+          answer: words,
+          data: {
+            ...rawProblem.data,
+            options: shuffleArray(words),
+          },
+        };
+      }
+
       // 難易度はモードで決定: select=2, input=3, sort=4
       const difficulty = problem.type === 'select' ? 2 : problem.type === 'input' ? 3 : 4;
       const card: ProblemCard = {

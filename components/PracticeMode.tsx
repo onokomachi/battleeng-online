@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Problem, SessionStats, StudentProfile } from '../types';
 import type { User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
@@ -15,6 +15,7 @@ interface PracticeModeProps {
   db: Firestore | null;
   user: User | null;
   studentProfile: StudentProfile | null;
+  srsReviewProblems?: Problem[];
 }
 
 /**
@@ -56,10 +57,17 @@ const submitRanking = async (
   }
 };
 
-const PracticeMode: React.FC<PracticeModeProps> = ({ onSessionComplete, db, user, studentProfile }) => {
+const PracticeMode: React.FC<PracticeModeProps> = ({ onSessionComplete, db, user, studentProfile, srsReviewProblems }) => {
   const [screen, setScreen] = useState<'menu' | 'problem' | 'records'>('menu');
   const [selectedTopic, setSelectedTopic] = useState<{ category: string; subTopic: string; initialProblems?: Problem[] } | null>(null);
   const [overallStats, setOverallStats] = useState<SessionStats>({ correct: 0, incorrect: 0, totalScore: 0, problemCount: 0 });
+
+  useEffect(() => {
+    if (srsReviewProblems && srsReviewProblems.length > 0) {
+      setSelectedTopic({ category: 'srs_review', subTopic: 'SRS復習', initialProblems: srsReviewProblems });
+      setScreen('problem');
+    }
+  }, [srsReviewProblems]);
 
   const handleSelectSubTopic = (category: string, subTopic: string) => {
     setSelectedTopic({ category, subTopic });

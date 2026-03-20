@@ -109,7 +109,7 @@ const PracticeSummary: React.FC<{ stats: SessionStats, subTopic: string, elapsed
 
                 <div className="w-full bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 mb-4 sm:mb-6 text-center">
                     <p className="text-[10px] sm:text-xs text-amber-400 font-bold mb-0.5">獲得ポイント（{rank}ランクボーナス ×{rank === 'S' ? 3 : rank === 'A' ? 2 : rank === 'B' ? 1.5 : 1}）</p>
-                    <p className="text-2xl sm:text-3xl text-amber-400 font-bold font-mono">+{mpReward} <span className="text-sm text-amber-600">MP</span></p>
+                    <p className="text-2xl sm:text-3xl text-amber-400 font-bold font-mono">+{mpReward} <span className="text-sm text-amber-600">EP</span></p>
                 </div>
 
                 <button onClick={() => onBack(mpReward)} className="btn-tactical w-full py-3 rounded-xl font-bold text-base sm:text-lg tracking-wide text-cyan-400 border-cyan-400/40">
@@ -304,18 +304,18 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, initi
   }
 
   return (
-    <div className="h-[100dvh] w-full p-2 sm:p-3 flex items-start justify-center relative overflow-hidden font-['Inter'] text-white">
+    <div className="h-[100dvh] w-full p-1.5 sm:p-2 flex items-start justify-center relative overflow-hidden font-['Inter'] text-white">
       {isHintVisible && problemHint && <HintModal hint={problemHint} onClose={() => setIsHintVisible(false)} />}
       <DrawingCanvas isVisible={isMemoVisible} />
 
       <div className="relative w-full max-w-6xl h-full">
-        <div className={`w-full h-full hud-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 z-10 relative transition-all duration-300 flex flex-col overflow-hidden ${vfxClass}`}>
+        <div className={`w-full h-full hud-panel rounded-xl sm:rounded-2xl p-2.5 sm:p-3 lg:p-4 z-10 relative transition-all duration-300 flex flex-col overflow-hidden ${vfxClass}`}>
            <div className="corner-accent lt border-cyan-500/40"></div>
            <div className="corner-accent rt border-cyan-500/40"></div>
            <div className="corner-accent lb border-cyan-500/40"></div>
            <div className="corner-accent rb border-cyan-500/40"></div>
 
-           <header className='flex justify-between items-center mb-2 border-b border-cyan-500/10 pb-2 flex-shrink-0'>
+           <header className='flex justify-between items-center mb-1.5 border-b border-cyan-500/10 pb-1.5 flex-shrink-0'>
               <div className='flex items-center gap-2 sm:gap-3 min-w-0'>
                 <button onClick={() => onBack(sessionStats)} className='text-cyan-400 hover:text-white transition-all p-1.5 sm:p-2 bg-blue-900/20 rounded-lg border border-cyan-500/20 flex-shrink-0' title="前の画面へ">
                   <BackIcon className='w-4 h-4 sm:w-5 sm:h-5' />
@@ -343,9 +343,9 @@ const ProblemScreen: React.FC<ProblemScreenProps> = ({ category, subTopic, initi
               </div>
            </header>
 
-           <main className='grid lg:grid-cols-[1fr_220px] gap-3 lg:gap-4 flex-1 min-h-0 overflow-y-auto'>
-              <div className='space-y-2 sm:space-y-3'>
-                <div className='w-full bg-slate-950/40 rounded-xl p-3 sm:p-4 border border-cyan-500/5 shadow-inner overflow-y-auto max-h-[50vh] lg:max-h-[60vh]'>
+           <main className='grid lg:grid-cols-[1fr_220px] gap-2 lg:gap-3 flex-1 min-h-0 overflow-y-auto'>
+              <div className='space-y-1.5 sm:space-y-2'>
+                <div className='w-full bg-slate-950/40 rounded-xl p-2.5 sm:p-3 border border-cyan-500/5 shadow-inner overflow-y-auto max-h-[38vh] lg:max-h-[52vh]'>
                   {/* Question text */}
                   <p className="text-white text-base sm:text-lg lg:text-xl font-bold leading-relaxed mb-2 text-center">
                     {currentProblem?.data.question || '問題文なし'}

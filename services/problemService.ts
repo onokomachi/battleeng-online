@@ -1,6 +1,7 @@
 
 import { ENGLISH_PROBLEMS } from '../data';
 import { Problem } from '../types';
+import { getDueItems } from './spacedRepetitionService';
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   return [...array].sort(() => Math.random() - 0.5);
@@ -53,4 +54,39 @@ export const getMultiCategoryProblemSet = (categories: string[], count: number =
     allProblems.push(...(ENGLISH_PROBLEMS[cat] || []));
   }
   return shuffleArray(allProblems).slice(0, count);
+};
+
+/**
+ * Returns up to 5 Problems for SRS review (due items).
+ * Looks up the full problem from ENGLISH_PROBLEMS by matching answer + questionPreview.
+ */
+export const getSrsProblemsForReview = (): Problem[] => {
+  const dueItems = getDueItems();
+  const problems: Problem[] = [];
+
+  for (const item of dueItems) {
+    const categoryProblems = ENGLISH_PROBLEMS[item.category] || [];
+    const found =
+      categoryProblems.find(p => {
+        const ans = Array.isArray(p.answer) ? p.answer.join(' ') : p.answer;
+        return ans === item.answer && p.data.question.startsWith(item.questionPreview);
+      }) ||
+      categoryProblems.find(p => {
+        const ans = Array.isArray(p.answer) ? p.answer.join(' ') : p.answer;
+        return ans === item.answer;
+      });
+
+    if (found) {
+      problems.push(found);
+    } else {
+      // Fallback: synthetic select problem from stored data
+      problems.push({
+        type: 'input',
+        data: { question: item.questionPreview },
+        answer: item.answer,
+      });
+    }
+  }
+
+  return shuffleArray(problems).slice(0, 5);
 };

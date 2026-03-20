@@ -10,6 +10,7 @@ import { getDueCount, getTotalSrsCount } from '../services/spacedRepetitionServi
 
 interface WeaknessPanelProps {
   onClose: () => void;
+  onStartSrsReview?: () => void;
 }
 
 const statusConfig: Record<WeaknessReport['status'], { label: string; color: string; bg: string }> = {
@@ -19,7 +20,7 @@ const statusConfig: Record<WeaknessReport['status'], { label: string; color: str
   struggling: { label: '要復習', color: 'text-red-400', bg: 'bg-red-500/20' },
 };
 
-const WeaknessPanel: React.FC<WeaknessPanelProps> = ({ onClose }) => {
+const WeaknessPanel: React.FC<WeaknessPanelProps> = ({ onClose, onStartSrsReview }) => {
   const reports = useMemo(() => getWeaknessReport(), []);
   const overallAccuracy = useMemo(() => getOverallAccuracy(), []);
   const dueCount = useMemo(() => getDueCount(), []);
@@ -119,10 +120,25 @@ const WeaknessPanel: React.FC<WeaknessPanelProps> = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-cyan-900/20 bg-slate-900/40 flex-shrink-0">
-          <p className="text-[9px] text-gray-600 text-center">
-            要復習の分野は「練習モード」で重点的に取り組みましょう
-          </p>
+        <div className="p-3 border-t border-cyan-900/20 bg-slate-900/40 flex-shrink-0 flex items-center gap-3">
+          {dueCount > 0 && onStartSrsReview ? (
+            <button
+              onClick={onStartSrsReview}
+              className="flex-1 py-2.5 rounded-xl font-black text-sm tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-orange-500/20"
+            >
+              復習を開始 ({dueCount}問)
+            </button>
+          ) : (
+            <p className="flex-1 text-[9px] text-gray-600 text-center">
+              {dueCount === 0 ? '今日の復習は完了しています！' : '要復習の分野は「練習モード」で重点的に取り組みましょう'}
+            </p>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-400 hover:text-white border border-slate-700 hover:border-slate-500 transition-colors"
+          >
+            閉じる
+          </button>
         </div>
       </div>
     </div>
