@@ -149,8 +149,11 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ ownedCards, onDeckSubmit, onB
   return (
     <div className="w-full h-full flex flex-col items-center p-3 sm:p-4 text-white overflow-hidden">
       <header className="text-center mb-3 sm:mb-4 flex-shrink-0">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-hologram tracking-[0.1em] mb-1">デッキ編成</h1>
-        <p className="text-xs sm:text-sm text-cyan-400 font-bold">カードを選んでデッキを作ろう: {deck.length} / {DECK_SIZE}枚</p>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-[0.08em] mb-1"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", color: '#38BDF8' }}>
+          Battle mode
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-400 font-bold">カードを選んでデッキを作ろう: {deck.length} / {DECK_SIZE}枚</p>
       </header>
 
       <div className="w-full max-w-7xl flex-grow flex gap-3 sm:gap-4 overflow-hidden min-h-0">
