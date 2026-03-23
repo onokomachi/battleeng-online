@@ -12,6 +12,13 @@ export const MAX_DUPLICATES = 2;
 // HP40 + ダメージ式 → 平均7-8ラウンド/試合
 export const INITIAL_HP = 40;
 
+// Speed Duel: 固定ダメージ（デッキ不要モード）
+export const SPEED_DUEL_DAMAGE = 5;
+// Speed Duel: 問題の制限時間（ミリ秒）
+export const SPEED_DUEL_TIME_LIMIT = 15000;
+// Speed Duel: 誤答後の相手回答時間（ミリ秒）
+export const SPEED_DUEL_SECOND_CHANCE_TIME = 6000;
+
 // Damage formula: difficulty × 1.5 + 1
 // select(2)=4, input(3)=5.5→6, sort(4)=7
 export const calcDamage = (difficulty: number): number =>

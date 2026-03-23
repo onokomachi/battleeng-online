@@ -21,12 +21,12 @@ import {
   runTransaction, where, orderBy, limit, Timestamp, deleteDoc
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile, Problem } from './types';
+import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile, Problem, SpeedDuelSetup, SpeedDuelRound } from './types';
 import {
   CARD_DEFINITIONS, HAND_SIZE, DECK_SIZE,
   INITIAL_HP, calcDamage, ADMIN_EMAILS, GAMEMASTER_PASSWORD,
   BADGE_DEFS, DAILY_QUEST_DEFS, WEEKLY_QUEST_DEFS, getTodayStr, getWeekStart,
-  SHOP_ITEMS,
+  SHOP_ITEMS, SPEED_DUEL_DAMAGE, SPEED_DUEL_TIME_LIMIT, SPEED_DUEL_SECOND_CHANCE_TIME,
 } from './constants';
 import GameBoard from './components/GameBoard';
 import DeckBuilder from './components/DeckBuilder';
@@ -44,7 +44,9 @@ import BadgeNotification from './components/BadgeNotification';
 import LoginBonusModal, { getLoginReward } from './components/LoginBonusModal';
 import ClassBattleBoard from './components/ClassBattleBoard';
 import { addIncorrectToSrs, getDueCount } from './services/spacedRepetitionService';
-import { getSrsProblemsForReview } from './services/problemService';
+import { getSrsProblemsForReview, getMultiCategoryProblemSet } from './services/problemService';
+import SpeedDuelSetupScreen from './components/SpeedDuelSetup';
+import SpeedDuelBoard from './components/SpeedDuelBoard';
 import { recordAttempt, getCategoryWeights } from './services/weaknessAnalysisService';
 import WeaknessPanel from './components/WeaknessPanel';
 import ItemShop from './components/ItemShop';
@@ -214,6 +216,27 @@ const App: React.FC = () => {
   const [tutorialDone, setTutorialDone] = useState(() => {
     return localStorage.getItem('bm_tutorial_done') === '1';
   });
+
+  // --- Speed Duel State ---
+  const [sdSetup, setSdSetup] = useState<SpeedDuelSetup | null>(null);
+  const [sdRound, setSdRound] = useState<SpeedDuelRound | null>(null);
+  const [sdPlayerHP, setSdPlayerHP] = useState(INITIAL_HP);
+  const [sdOpponentHP, setSdOpponentHP] = useState(INITIAL_HP);
+  const [sdPlayerRoundWins, setSdPlayerRoundWins] = useState(0);
+  const [sdOpponentRoundWins, setSdOpponentRoundWins] = useState(0);
+  const [sdCurrentRound, setSdCurrentRound] = useState(1);
+  const [sdGameLog, setSdGameLog] = useState<string[]>([]);
+  const [sdTimeRemaining, setSdTimeRemaining] = useState(SPEED_DUEL_TIME_LIMIT);
+  // Refs for live values accessed by timer callbacks (avoids stale closures)
+  const sdLiveRef = useRef({
+    playerHP: INITIAL_HP, opponentHP: INITIAL_HP,
+    playerRoundWins: 0, opponentRoundWins: 0,
+    currentRound: 1, poolIndex: 0,
+    setup: null as SpeedDuelSetup | null,
+    pool: [] as Problem[],
+  });
+  const sdCpuThinkRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sdSecondChanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // クエスト進捗 (localStorage管理でFirestoreクォータ節約)
   const [dailyQuestProgress, setDailyQuestProgress] = useState<Record<string, number>>({});
   const [dailyQuestDone, setDailyQuestDone] = useState<Set<string>>(new Set());
@@ -732,6 +755,209 @@ const App: React.FC = () => {
     setCurrentRound(1);
     setTurnPhase('selecting_card');
   }, []);
+
+  // ============================
+  // Speed Duel Logic
+  // ============================
+  const sdGetRequiredWins = (format: BattleFormat): number => {
+    if (format === 'best_of_3') return 2;
+    if (format === 'best_of_5') return 3;
+    if (format === 'best_of_7') return 4;
+    return 0;
+  };
+
+  const sdClearTimers = useCallback(() => {
+    if (sdCpuThinkRef.current) { clearTimeout(sdCpuThinkRef.current); sdCpuThinkRef.current = null; }
+    if (sdSecondChanceRef.current) { clearTimeout(sdSecondChanceRef.current); sdSecondChanceRef.current = null; }
+  }, []);
+
+  const sdAdvanceQuestion = useCallback((pool: Problem[], idx: number) => {
+    sdClearTimers();
+    const actualIdx = idx % Math.max(1, pool.length);
+    const problem = pool[actualIdx];
+    if (!problem) return;
+    sdLiveRef.current.poolIndex = actualIdx;
+    setSdRound({
+      problem,
+      phase: 'showing_question',
+      playerBuzzed: false,
+      cpuBuzzed: false,
+      playerAnswer: null,
+      cpuAnswered: false,
+      result: null,
+      startedAt: Date.now(),
+    });
+    setSdTimeRemaining(SPEED_DUEL_TIME_LIMIT);
+  }, [sdClearTimers]);
+
+  const sdResolveRound = useCallback((result: 'player_win' | 'cpu_win' | 'draw' | 'timeout') => {
+    sdClearTimers();
+    const live = sdLiveRef.current;
+
+    let newPlayerHP = live.playerHP;
+    let newOpponentHP = live.opponentHP;
+    let newPlayerWins = live.playerRoundWins;
+    let newOpponentWins = live.opponentRoundWins;
+
+    if (result === 'player_win') {
+      newOpponentHP = Math.max(0, live.opponentHP - SPEED_DUEL_DAMAGE);
+      newPlayerWins = live.playerRoundWins + 1;
+      setSdGameLog(prev => [...prev, `R${live.currentRound}: 正解！`]);
+      onCorrectAnswerEvent(true, '');
+    } else if (result === 'cpu_win') {
+      newPlayerHP = Math.max(0, live.playerHP - SPEED_DUEL_DAMAGE);
+      newOpponentWins = live.opponentRoundWins + 1;
+      setSdGameLog(prev => [...prev, `R${live.currentRound}: CPU正解...`]);
+      onCorrectAnswerEvent(false, '');
+    } else if (result === 'draw') {
+      setSdGameLog(prev => [...prev, `R${live.currentRound}: ドロー`]);
+    } else {
+      setSdGameLog(prev => [...prev, `R${live.currentRound}: タイムアウト`]);
+    }
+
+    // Update live ref and state
+    sdLiveRef.current = { ...live, playerHP: newPlayerHP, opponentHP: newOpponentHP, playerRoundWins: newPlayerWins, opponentRoundWins: newOpponentWins };
+    setSdPlayerHP(newPlayerHP);
+    setSdOpponentHP(newOpponentHP);
+    setSdPlayerRoundWins(newPlayerWins);
+    setSdOpponentRoundWins(newOpponentWins);
+    setSdRound(prev => prev ? { ...prev, phase: 'reveal', result } : prev);
+  }, [sdClearTimers, onCorrectAnswerEvent]);
+
+  const sdBuzz = useCallback(() => {
+    if (!sdRound || sdRound.phase !== 'showing_question' || sdRound.playerBuzzed || sdRound.cpuBuzzed) return;
+    sdClearTimers();
+    setSdRound(prev => prev ? { ...prev, phase: 'player_buzzed', playerBuzzed: true } : prev);
+  }, [sdRound, sdClearTimers]);
+
+  const sdAnswer = useCallback((answer: string) => {
+    if (!sdRound) return;
+    const { phase, problem } = sdRound;
+    if (phase !== 'player_buzzed' && phase !== 'opponent_chance') return;
+    sdClearTimers();
+
+    const correctStr = Array.isArray(problem.answer) ? problem.answer.join(' ') : String(problem.answer);
+    const correct = normalizeAnswer(answer) === normalizeAnswer(correctStr);
+    setSdRound(prev => prev ? { ...prev, playerAnswer: answer } : prev);
+
+    if (phase === 'player_buzzed') {
+      if (correct) {
+        sdResolveRound('player_win');
+      } else {
+        // Wrong → CPU gets second chance (always answers correctly in CPU mode)
+        setSdRound(prev => prev ? { ...prev, phase: 'opponent_chance' } : prev);
+        sdSecondChanceRef.current = setTimeout(() => {
+          sdResolveRound('cpu_win');
+        }, SPEED_DUEL_SECOND_CHANCE_TIME);
+      }
+    } else {
+      // opponent_chance — player gets second shot
+      sdResolveRound(correct ? 'player_win' : 'draw');
+    }
+  }, [sdRound, sdClearTimers, sdResolveRound]);
+
+  const startSpeedDuel = useCallback((setup: SpeedDuelSetup) => {
+    const pool = getMultiCategoryProblemSet(setup.categories, 50);
+    if (pool.length === 0) return;
+    sdLiveRef.current = {
+      playerHP: INITIAL_HP, opponentHP: INITIAL_HP,
+      playerRoundWins: 0, opponentRoundWins: 0,
+      currentRound: 1, poolIndex: 0,
+      setup, pool,
+    };
+    setSdSetup(setup);
+    setSdPlayerHP(INITIAL_HP);
+    setSdOpponentHP(INITIAL_HP);
+    setSdPlayerRoundWins(0);
+    setSdOpponentRoundWins(0);
+    setSdCurrentRound(1);
+    setSdGameLog([]);
+    setWinner(null);
+    setChainCount(0);
+    setGameState('speed_duel');
+    sdAdvanceQuestion(pool, 0);
+  }, [sdAdvanceQuestion]);
+
+  // CPU think timer — fires when question is shown
+  useEffect(() => {
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question') return;
+    const delay = 4000 + Math.random() * 8000;
+    sdCpuThinkRef.current = setTimeout(() => {
+      setSdRound(prev => {
+        if (!prev || prev.phase !== 'showing_question') return prev;
+        return { ...prev, cpuBuzzed: true };
+      });
+      // Short pause then CPU "answers" correctly
+      sdSecondChanceRef.current = setTimeout(() => {
+        sdResolveRound('cpu_win');
+      }, 800);
+    }, delay);
+    return () => {
+      if (sdCpuThinkRef.current) clearTimeout(sdCpuThinkRef.current);
+    };
+  }, [sdRound?.startedAt, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Countdown display timer
+  useEffect(() => {
+    if (gameState !== 'speed_duel' || !sdRound) return;
+    const { phase, startedAt } = sdRound;
+    if (phase !== 'showing_question' && phase !== 'player_buzzed' && phase !== 'opponent_chance') return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, SPEED_DUEL_TIME_LIMIT - (Date.now() - startedAt));
+      setSdTimeRemaining(remaining);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [sdRound?.startedAt, sdRound?.phase, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Hard timeout — if no one answers in 15s
+  useEffect(() => {
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question') return;
+    const elapsed = Date.now() - sdRound.startedAt;
+    const remaining = Math.max(0, SPEED_DUEL_TIME_LIMIT - elapsed);
+    const t = setTimeout(() => sdResolveRound('timeout'), remaining);
+    return () => clearTimeout(t);
+  }, [sdRound?.startedAt, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reveal phase → advance to next question
+  useEffect(() => {
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'reveal') return;
+    const live = sdLiveRef.current;
+    const setup = live.setup!;
+    const required = sdGetRequiredWins(setup.format);
+    const isGameOver = setup.format === 'master_duel'
+      ? live.playerHP <= 0 || live.opponentHP <= 0
+      : live.playerRoundWins >= required || live.opponentRoundWins >= required;
+
+    const t = setTimeout(() => {
+      if (isGameOver) {
+        const isDraw = live.playerHP <= 0 && live.opponentHP <= 0;
+        const isWin = setup.format === 'master_duel'
+          ? live.opponentHP <= 0
+          : live.playerRoundWins >= required;
+        if (isDraw) {
+          setWinner('引き分け\nよく戦いました！');
+          addExp(200);
+        } else if (isWin) {
+          setWinner('勝利！\nスピードデュエル制覇！');
+          addExp(500);
+          setMathPoints(p => p + 300);
+          earnBadge('first_win');
+        } else {
+          setWinner('敗北...\n次こそ勝とう！');
+          addExp(100);
+        }
+        setSdRound(prev => prev ? { ...prev, phase: 'game_over' } : prev);
+        setGameState('end');
+      } else {
+        const nextRound = live.currentRound + 1;
+        const nextIdx = (live.poolIndex + 1) % live.pool.length;
+        sdLiveRef.current.currentRound = nextRound;
+        setSdCurrentRound(nextRound);
+        sdAdvanceQuestion(live.pool, nextIdx);
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [sdRound?.phase, sdRound?.result, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // エビデンスA: MDN beforeunload + visibilitychange
   // ブラウザ閉じ/タブ閉じ時にルームをクリーンアップ
@@ -1534,13 +1760,27 @@ const App: React.FC = () => {
             </h1>
             <div className="flex gap-4 mt-12">
               <button
-                onClick={() => { cleanupGameSession(); setChainCount(0); setGameState('deck_building'); }}
+                onClick={() => {
+                  if (sdSetup) {
+                    // Speed Duel RETRY: restart with same setup
+                    startSpeedDuel(sdSetup);
+                  } else {
+                    cleanupGameSession(); setChainCount(0); setGameState('deck_building');
+                  }
+                }}
                 className="btn-tactical py-4 px-10 rounded-lg text-xl tracking-[0.4em]"
               >
                 RETRY
               </button>
               <button
-                onClick={async () => { await flushSessionData(); cleanupGameSession(); setChainCount(0); setGameState('main_menu'); }}
+                onClick={async () => {
+                  await flushSessionData();
+                  cleanupGameSession();
+                  setChainCount(0);
+                  setSdSetup(null);
+                  setSdRound(null);
+                  setGameState('main_menu');
+                }}
                 className="border border-gray-600 text-gray-400 hover:text-white py-4 px-10 rounded-lg text-xl tracking-[0.4em] transition-colors"
               >
                 MENU
@@ -1572,6 +1812,34 @@ const App: React.FC = () => {
         ) : (
           <div className="text-center text-red-400 p-12">Firebase接続エラー</div>
         );
+
+      case 'speed_duel_setup':
+        return (
+          <SpeedDuelSetupScreen
+            onStart={(setup) => startSpeedDuel(setup)}
+            onBack={() => setGameState('main_menu')}
+            user={user}
+          />
+        );
+
+      case 'speed_duel':
+        return sdRound ? (
+          <SpeedDuelBoard
+            round={sdRound}
+            playerHP={sdPlayerHP}
+            opponentHP={sdOpponentHP}
+            playerRoundWins={sdPlayerRoundWins}
+            opponentRoundWins={sdOpponentRoundWins}
+            currentRound={sdCurrentRound}
+            requiredWins={sdGetRequiredWins(sdSetup?.format ?? 'best_of_5')}
+            battleFormat={sdSetup?.format ?? 'best_of_5'}
+            gameMode={sdSetup?.mode ?? 'cpu'}
+            timeRemaining={sdTimeRemaining}
+            onBuzz={sdBuzz}
+            onAnswer={sdAnswer}
+            gameLog={sdGameLog}
+          />
+        ) : null;
 
       default:
         return null;

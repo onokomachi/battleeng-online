@@ -389,6 +389,13 @@ const MainMenu: React.FC<MainMenuProps> = ({
             delay={0} onSelect={onSelectMode}
           />
           <ModeButton
+            mode="speed_duel_setup" letter="S"
+            label="スピードデュエル" labelEn="SPEED DUEL"
+            desc="デッキ不要！早押しクイズでバトル"
+            accentHex="#A855F7" glowColor="rgba(168,85,247,0.18)"
+            delay={30} onSelect={onSelectMode}
+          />
+          <ModeButton
             mode="practice_mode" letter="P"
             label="Practice mode" labelEn="PRACTICE"
             desc="分野別に問題を解いて実力アップ"
