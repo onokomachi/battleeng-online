@@ -141,6 +141,19 @@ export interface Room {
   p1Move: { cardId: number; answeredCorrectly?: boolean } | null;
   p2Move: { cardId: number; answeredCorrectly?: boolean } | null;
   winnerId: 'host' | 'guest' | 'draw' | 'abandoned' | 'admin_terminated' | null;
+  // Speed Duel PvP extension (optional fields)
+  battleType?: 'deck' | 'speed_duel';
+  sdCategories?: string[];
+  sdFormat?: BattleFormat;
+  sdQuestion?: { type: string; data: { question: string; japanese?: string; options?: string[] }; answer: string | string[] } | null;
+  sdQuestionIndex?: number;
+  sdHostBuzz?: any;
+  sdGuestBuzz?: any;
+  sdHostAnswer?: string | null;
+  sdGuestAnswer?: string | null;
+  sdRoundResult?: 'host' | 'guest' | 'draw' | 'timeout' | null;
+  sdHostRoundWins?: number;
+  sdGuestRoundWins?: number;
 }
 
 // --- Core Game Types ---
@@ -177,8 +190,33 @@ export interface ProblemCard {
 }
 
 export type TurnPhase = 'selecting_card' | 'solving_problem' | 'round_end' | 'game_over' | 'waiting_for_opponent';
-export type GameState = 'login_screen' | 'main_menu' | 'deck_building' | 'in_game' | 'end' | 'practice_mode' | 'card_shop' | 'matchmaking' | 'gamemaster' | 'tutorial';
+export type GameState = 'login_screen' | 'main_menu' | 'deck_building' | 'in_game' | 'end' | 'practice_mode' | 'card_shop' | 'matchmaking' | 'gamemaster' | 'tutorial' | 'speed_duel_setup' | 'speed_duel';
 export type TurnInitiative = 'player' | 'pc';
+
+// --- Speed Duel Types ---
+export type SpeedDuelPhase =
+  | 'showing_question'   // 問題表示中・早押し受付中
+  | 'player_buzzed'      // プレイヤーが先押し → 回答入力中
+  | 'opponent_chance'    // プレイヤー誤答 → 相手に回答権
+  | 'reveal'             // 結果表示
+  | 'game_over';
+
+export interface SpeedDuelSetup {
+  categories: EnglishCategory[];
+  format: BattleFormat;
+  mode: BattleMode;
+}
+
+export interface SpeedDuelRound {
+  problem: Problem;
+  phase: SpeedDuelPhase;
+  playerBuzzed: boolean;
+  cpuBuzzed: boolean;
+  playerAnswer: string | null;
+  cpuAnswered: boolean;
+  result: 'player_win' | 'cpu_win' | 'draw' | 'timeout' | null;
+  startedAt: number; // Date.now()
+}
 
 // --- Practice Mode Types ---
 export interface SubCategoryGroup {
