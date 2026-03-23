@@ -177,6 +177,8 @@ const App: React.FC = () => {
   const unsubscribeRoomRef = useRef<(() => void) | null>(null);
   const isHostRef = useRef(isHost);
   const processedMatchIdRef = useRef<string | null>(null);
+  const pendingPvpDeckRef = useRef<ProblemCard[]>([]);
+  const pendingSdSetupRef = useRef<SpeedDuelSetup | null>(null);
   const currentRoomIdRef = useRef<string | null>(null);
   const gameModeRef = useRef<BattleMode>('cpu');
 
@@ -678,7 +680,7 @@ const App: React.FC = () => {
   // ============================
   // エビデンスA: Firestore query最適化 - finishedルームを除外
   useEffect(() => {
-    if (gameState !== 'matchmaking' || !db) return;
+    if ((gameState !== 'matchmaking' && gameState !== 'sd_matchmaking') || !db) return;
     const q = query(
       collection(db, 'rooms'),
       where('status', 'in', ['waiting', 'playing']),
@@ -857,6 +859,14 @@ const App: React.FC = () => {
   }, [sdRound, sdClearTimers, sdResolveRound]);
 
   const startSpeedDuel = useCallback((setup: SpeedDuelSetup) => {
+    // PvPモードはマッチメイキングへ遷移
+    if (setup.mode === 'pvp') {
+      pendingSdSetupRef.current = setup;
+      setSdSetup(setup);
+      setGameMode('pvp');
+      setGameState('sd_matchmaking');
+      return;
+    }
     const pool = getMultiCategoryProblemSet(setup.categories, 50);
     if (pool.length === 0) return;
     sdLiveRef.current = {
@@ -878,9 +888,230 @@ const App: React.FC = () => {
     sdAdvanceQuestion(pool, 0);
   }, [sdAdvanceQuestion]);
 
-  // CPU think timer — fires when question is shown
+  // ============================
+  // Speed Duel Online (PvP)
+  // ============================
+  const sdOnlinePoolRef = useRef<Problem[]>([]);
+  const sdOnlineAnsweredRef = useRef(false);
+
+  /** SD PvP: ゲーム開始（マッチ成立後） */
+  const startSdOnline = useCallback((setup: SpeedDuelSetup, roomId: string, amHost: boolean) => {
+    const pool = getMultiCategoryProblemSet(setup.categories, 50);
+    if (pool.length === 0) return;
+    sdOnlinePoolRef.current = pool;
+    sdOnlineAnsweredRef.current = false;
+    sdLiveRef.current = {
+      playerHP: INITIAL_HP, opponentHP: INITIAL_HP,
+      playerRoundWins: 0, opponentRoundWins: 0,
+      currentRound: 1, poolIndex: 0,
+      setup, pool,
+    };
+    setSdSetup(setup);
+    setGameMode('pvp');
+    setSdPlayerHP(INITIAL_HP);
+    setSdOpponentHP(INITIAL_HP);
+    setSdPlayerRoundWins(0);
+    setSdOpponentRoundWins(0);
+    setSdCurrentRound(1);
+    setSdGameLog([]);
+    setWinner(null);
+    setChainCount(0);
+    setGameState('speed_duel');
+
+    // ホストが最初の問題を書き込む
+    if (amHost && db) {
+      const q = pool[0];
+      updateDoc(doc(db, 'rooms', roomId), {
+        sdQuestion: { type: q.type, data: q.data, answer: q.answer },
+        sdQuestionIndex: 1,
+        sdHostAnswer: null, sdGuestAnswer: null,
+        sdHostBuzz: null, sdGuestBuzz: null,
+        sdRoundResult: null,
+      }).catch(() => {});
+    }
+  }, []);
+
+  /** SD PvP: ルームからの問題表示 */
+  const sdShowOnlineQuestion = useCallback((q: Problem) => {
+    sdClearTimers();
+    sdOnlineAnsweredRef.current = false;
+    setSdTimeRemaining(SPEED_DUEL_TIME_LIMIT);
+    setSdRound({
+      problem: q,
+      phase: 'player_buzzed', // PvPでは即回答モード
+      playerBuzzed: true,
+      cpuBuzzed: false,
+      playerAnswer: null,
+      cpuAnswered: false,
+      result: null,
+      startedAt: Date.now(),
+    });
+  }, [sdClearTimers]);
+
+  /** SD PvP: 回答送信 */
+  const sdOnlineAnswer = useCallback((answer: string) => {
+    if (!sdRound || sdOnlineAnsweredRef.current) return;
+    const roomId = currentRoomIdRef.current;
+    if (!roomId || !db) return;
+    sdOnlineAnsweredRef.current = true;
+    const field = isHostRef.current ? 'sdHostAnswer' : 'sdGuestAnswer';
+    updateDoc(doc(db, 'rooms', roomId), { [field]: answer }).catch(() => {});
+    // ローカルUI: 相手待ち表示
+    setSdRound(prev => prev ? { ...prev, phase: 'opponent_chance', playerAnswer: answer } : prev);
+  }, [sdRound]);
+
+  /** SD PvP: ルーム更新ハンドラ */
+  const sdHandleRoomUpdate = useCallback((data: Room, amHost: boolean) => {
+    const hostAns = data.sdHostAnswer;
+    const guestAns = data.sdGuestAnswer;
+    const qIdx = data.sdQuestionIndex ?? 0;
+    const live = sdLiveRef.current;
+
+    // 新しい問題が書き込まれた場合、表示する
+    if (data.sdQuestion && qIdx > (live.poolIndex + 1)) {
+      // poolIndex tracks displayed question (0-based), sdQuestionIndex is 1-based
+    }
+    if (data.sdQuestion && !sdOnlineAnsweredRef.current && sdRound?.phase === undefined) {
+      sdShowOnlineQuestion(data.sdQuestion as unknown as Problem);
+    }
+
+    // HP/ラウンド勝ち数の同期
+    const myHP = amHost ? data.p1Hp : data.p2Hp;
+    const opHP = amHost ? data.p2Hp : data.p1Hp;
+    const myWins = amHost ? (data.sdHostRoundWins ?? 0) : (data.sdGuestRoundWins ?? 0);
+    const opWins = amHost ? (data.sdGuestRoundWins ?? 0) : (data.sdHostRoundWins ?? 0);
+    setSdPlayerHP(myHP);
+    setSdOpponentHP(opHP);
+    setSdPlayerRoundWins(myWins);
+    setSdOpponentRoundWins(opWins);
+    sdLiveRef.current = { ...live, playerHP: myHP, opponentHP: opHP, playerRoundWins: myWins, opponentRoundWins: opWins };
+
+    // 両者回答済み → ホストが判定・次の問題へ進む
+    if (hostAns !== null && hostAns !== undefined && guestAns !== null && guestAns !== undefined && data.sdRoundResult === null) {
+      if (amHost) {
+        // ホストが判定する
+        const q = data.sdQuestion as unknown as Problem;
+        if (!q) return;
+        const correctStr = Array.isArray(q.answer) ? q.answer.join(' ') : String(q.answer);
+        const hostCorrect = normalizeAnswer(hostAns) === normalizeAnswer(correctStr);
+        const guestCorrect = normalizeAnswer(guestAns) === normalizeAnswer(correctStr);
+
+        let result: 'host' | 'guest' | 'draw';
+        if (hostCorrect && guestCorrect) result = 'draw'; // 両者正解→ドロー
+        else if (hostCorrect) result = 'host';
+        else if (guestCorrect) result = 'guest';
+        else result = 'draw'; // 両者不正解
+
+        const roomId = currentRoomIdRef.current;
+        if (!roomId || !db) return;
+
+        let newP1Hp = data.p1Hp;
+        let newP2Hp = data.p2Hp;
+        let newHostWins = data.sdHostRoundWins ?? 0;
+        let newGuestWins = data.sdGuestRoundWins ?? 0;
+
+        if (result === 'host') {
+          newP2Hp = Math.max(0, newP2Hp - SPEED_DUEL_DAMAGE);
+          newHostWins += 1;
+        } else if (result === 'guest') {
+          newP1Hp = Math.max(0, newP1Hp - SPEED_DUEL_DAMAGE);
+          newGuestWins += 1;
+        }
+
+        updateDoc(doc(db, 'rooms', roomId), {
+          sdRoundResult: result,
+          p1Hp: newP1Hp, p2Hp: newP2Hp,
+          sdHostRoundWins: newHostWins, sdGuestRoundWins: newGuestWins,
+        }).catch(() => {});
+      }
+      return; // ホスト判定待ち
+    }
+
+    // 結果が出た → リビール表示 & 次の問題へ
+    if (data.sdRoundResult && sdRound?.phase !== 'reveal') {
+      const resultForMe: 'player_win' | 'cpu_win' | 'draw' =
+        data.sdRoundResult === (amHost ? 'host' : 'guest') ? 'player_win' :
+        data.sdRoundResult === 'draw' ? 'draw' : 'cpu_win';
+
+      if (resultForMe === 'player_win') {
+        setSdGameLog(prev => [...prev, `R${qIdx}: 正解！`]);
+        onCorrectAnswerEvent(true, '');
+      } else if (resultForMe === 'cpu_win') {
+        setSdGameLog(prev => [...prev, `R${qIdx}: 相手が正解...`]);
+        onCorrectAnswerEvent(false, '');
+      } else {
+        setSdGameLog(prev => [...prev, `R${qIdx}: ドロー`]);
+      }
+
+      setSdRound(prev => prev ? { ...prev, phase: 'reveal', result: resultForMe } : prev);
+
+      // ゲームオーバー判定
+      const myHPAfter = amHost ? data.p1Hp : data.p2Hp;
+      const opHPAfter = amHost ? data.p2Hp : data.p1Hp;
+      const myWinsAfter = amHost ? (data.sdHostRoundWins ?? 0) : (data.sdGuestRoundWins ?? 0);
+      const opWinsAfter = amHost ? (data.sdGuestRoundWins ?? 0) : (data.sdHostRoundWins ?? 0);
+      const format = data.sdFormat ?? 'best_of_5';
+      const reqWins = sdGetRequiredWins(format);
+      const gameOver = format === 'master_duel'
+        ? (myHPAfter <= 0 || opHPAfter <= 0)
+        : (reqWins > 0 && (myWinsAfter >= reqWins || opWinsAfter >= reqWins));
+
+      if (gameOver) {
+        // ゲーム終了
+        setTimeout(() => {
+          const isWin = format === 'master_duel' ? opHPAfter <= 0 && myHPAfter > 0 : myWinsAfter >= reqWins;
+          const isDraw = format === 'master_duel' ? myHPAfter <= 0 && opHPAfter <= 0 : false;
+          setWinner(isDraw ? '引き分け' : isWin ? '勝利！' : '敗北...');
+          if (isWin) { addExp(500); setMathPoints(p => p + 300); }
+          else { addExp(100); }
+          handleQuestProgress('pvp_match');
+          flushSessionData().catch(() => {});
+          setGameState('end');
+          // ルームを終了
+          if (amHost && currentRoomIdRef.current && db) {
+            const winnerId = isDraw ? 'draw' : isWin ? 'host' : 'guest';
+            updateDoc(doc(db, 'rooms', currentRoomIdRef.current), {
+              status: 'finished', winnerId,
+            }).catch(() => {});
+          }
+        }, 2500);
+        return;
+      }
+
+      // ホスト: 次の問題を書き込む（2.5秒後）
+      if (amHost) {
+        setTimeout(() => {
+          const pool = sdOnlinePoolRef.current;
+          const nextIdx = (qIdx) % Math.max(1, pool.length);
+          const nextQ = pool[nextIdx];
+          if (!nextQ || !currentRoomIdRef.current || !db) return;
+          sdLiveRef.current.poolIndex = nextIdx;
+          updateDoc(doc(db, 'rooms', currentRoomIdRef.current), {
+            sdQuestion: { type: nextQ.type, data: nextQ.data, answer: nextQ.answer },
+            sdQuestionIndex: qIdx + 1,
+            sdHostAnswer: null, sdGuestAnswer: null,
+            sdHostBuzz: null, sdGuestBuzz: null,
+            sdRoundResult: null,
+          }).catch(() => {});
+        }, 2500);
+      }
+    }
+
+    // 新しい問題が来た（answerがnull + questionIndex変更）
+    if (data.sdQuestion && data.sdRoundResult === null && !sdOnlineAnsweredRef.current) {
+      const q = data.sdQuestion as unknown as Problem;
+      const currentStarted = sdRound?.startedAt ?? 0;
+      // 新しい問題の判定: questionIndexが変わった
+      if (qIdx > sdLiveRef.current.poolIndex + 1 || sdRound?.phase === 'reveal' || !sdRound) {
+        sdLiveRef.current.poolIndex = qIdx - 1;
+        sdShowOnlineQuestion(q);
+      }
+    }
+  }, [sdRound, sdShowOnlineQuestion, sdClearTimers, onCorrectAnswerEvent]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // CPU think timer — fires when question is shown (CPU mode only)
   useEffect(() => {
-    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question') return;
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question' || gameModeRef.current === 'pvp') return;
     const delay = 4000 + Math.random() * 8000;
     sdCpuThinkRef.current = setTimeout(() => {
       setSdRound(prev => {
@@ -909,18 +1140,33 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [sdRound?.startedAt, sdRound?.phase, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Hard timeout — if no one answers in 15s
+  // Hard timeout — if no one answers in 15s (CPU mode only)
   useEffect(() => {
-    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question') return;
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'showing_question' || gameModeRef.current === 'pvp') return;
     const elapsed = Date.now() - sdRound.startedAt;
     const remaining = Math.max(0, SPEED_DUEL_TIME_LIMIT - elapsed);
     const t = setTimeout(() => sdResolveRound('timeout'), remaining);
     return () => clearTimeout(t);
   }, [sdRound?.startedAt, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reveal phase → advance to next question
+  // PvP timeout — auto-submit empty answer if time runs out
   useEffect(() => {
-    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'reveal') return;
+    if (gameState !== 'speed_duel' || !sdRound || gameModeRef.current !== 'pvp') return;
+    if (sdRound.phase !== 'player_buzzed') return; // only when answering
+    if (sdOnlineAnsweredRef.current) return;
+    const elapsed = Date.now() - sdRound.startedAt;
+    const remaining = Math.max(0, SPEED_DUEL_TIME_LIMIT - elapsed);
+    const t = setTimeout(() => {
+      if (!sdOnlineAnsweredRef.current) {
+        sdOnlineAnswer('__TIMEOUT__');
+      }
+    }, remaining);
+    return () => clearTimeout(t);
+  }, [sdRound?.startedAt, sdRound?.phase, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reveal phase → advance to next question (CPU mode only; PvP uses sdHandleRoomUpdate)
+  useEffect(() => {
+    if (gameState !== 'speed_duel' || !sdRound || sdRound.phase !== 'reveal' || gameModeRef.current === 'pvp') return;
     const live = sdLiveRef.current;
     const setup = live.setup!;
     const required = sdGetRequiredWins(setup.format);
@@ -1006,17 +1252,42 @@ const App: React.FC = () => {
       // ルームが外部要因で finished になった場合（相手離脱・管理者終了等）
       if (data.status === 'finished' && data.winnerId === 'abandoned') {
         cleanupGameSession();
-        setGameState('deck_building');
+        if (data.battleType === 'speed_duel') {
+          setGameState('speed_duel_setup');
+        } else {
+          setGameState('deck_building');
+        }
         return;
       }
 
+      // --- デッキバトル: マッチング成立 → ゲーム開始 ---
       if (data.status === 'playing' && gameState === 'matchmaking') {
+        const pvpDeck = pendingPvpDeckRef.current.length > 0 ? pendingPvpDeckRef.current : playerDeck;
         setCurrentRound(1);
         processedMatchIdRef.current = null;
         setTimeout(() => {
-          startGame(playerDeck, false, data);
+          startGame(pvpDeck, false, data);
           setGameState('in_game');
         }, 500);
+      }
+
+      // --- スピードデュエル: マッチング成立 → SD開始 ---
+      if (data.status === 'playing' && gameState === 'sd_matchmaking') {
+        processedMatchIdRef.current = null;
+        setTimeout(() => {
+          const setup: SpeedDuelSetup = pendingSdSetupRef.current ?? {
+            categories: (data.sdCategories ?? []) as any,
+            format: data.sdFormat ?? 'best_of_5',
+            mode: 'pvp',
+          };
+          // オンラインSDを開始
+          startSdOnline(setup, roomId, isHostVal);
+        }, 500);
+      }
+
+      // --- スピードデュエルPvP: リアルタイム同期 ---
+      if (gameState === 'speed_duel' && data.battleType === 'speed_duel') {
+        sdHandleRoomUpdate(data, isHostVal);
       }
 
       if (gameState === 'in_game') {
@@ -1058,7 +1329,7 @@ const App: React.FC = () => {
     });
   };
 
-  const handleJoinRoom = async (roomId: string) => {
+  const handleJoinRoom = async (roomId: string, battleType?: 'deck' | 'speed_duel') => {
     if (!user || !db) {
       alert('PvP対戦にはログインが必要です');
       return;
@@ -1067,17 +1338,35 @@ const App: React.FC = () => {
     try {
       const roomRef = doc(db, 'rooms', roomId);
       const uid = user.uid.trim();
+      const sdSetup = pendingSdSetupRef.current;
       const result = await runTransaction(db, async (tx) => {
         const roomDoc = await tx.get(roomRef);
-        const base = {
+        const base: Record<string, any> = {
           roomId, status: 'waiting', hostId: uid,
           hostName: user.displayName || 'Player',
           guestId: null, guestName: null,
           createdAt: serverTimestamp(), hostLastActive: serverTimestamp(),
           guestLastActive: null, hostReady: true, guestReady: false,
           round: 1, p1Move: null, p2Move: null,
-          p1Hp: INITIAL_HP, p2Hp: INITIAL_HP, winnerId: null
+          p1Hp: INITIAL_HP, p2Hp: INITIAL_HP, winnerId: null,
         };
+        // Speed Duel 固有フィールド
+        if (battleType === 'speed_duel' && sdSetup) {
+          base.battleType = 'speed_duel';
+          base.sdCategories = sdSetup.categories;
+          base.sdFormat = sdSetup.format;
+          base.sdQuestion = null;
+          base.sdQuestionIndex = 0;
+          base.sdHostBuzz = null;
+          base.sdGuestBuzz = null;
+          base.sdHostAnswer = null;
+          base.sdGuestAnswer = null;
+          base.sdRoundResult = null;
+          base.sdHostRoundWins = 0;
+          base.sdGuestRoundWins = 0;
+        } else {
+          base.battleType = 'deck';
+        }
         if (!roomDoc.exists() || (roomDoc.data() as Room).status === 'finished') {
           tx.set(roomRef, base);
           return 'host';
@@ -1641,6 +1930,7 @@ const App: React.FC = () => {
               setGameMode(bmode);
               setBattleFormat(format);
               if (bmode === 'pvp') {
+                pendingPvpDeckRef.current = deck;
                 setGameState('matchmaking');
               } else {
                 startGame(deck, true, undefined, format);
@@ -1654,8 +1944,8 @@ const App: React.FC = () => {
       case 'matchmaking':
         return (
           <Matchmaking
-            rooms={rooms}
-            onJoinRoom={handleJoinRoom}
+            rooms={rooms.filter(r => r.battleType !== 'speed_duel')}
+            onJoinRoom={(roomId) => handleJoinRoom(roomId, 'deck')}
             onCancel={async () => {
               await leaveRoom(currentRoomId, isHost);
               cleanupGameSession();
@@ -1761,8 +2051,14 @@ const App: React.FC = () => {
             <div className="flex gap-4 mt-12">
               <button
                 onClick={() => {
-                  if (sdSetup) {
-                    // Speed Duel RETRY: restart with same setup
+                  if (sdSetup && sdSetup.mode === 'pvp') {
+                    // SD PvP RETRY: マッチメイキングに戻る
+                    cleanupGameSession();
+                    pendingSdSetupRef.current = sdSetup;
+                    setGameMode('pvp');
+                    setGameState('sd_matchmaking');
+                  } else if (sdSetup) {
+                    // Speed Duel CPU RETRY: restart with same setup
                     startSpeedDuel(sdSetup);
                   } else {
                     cleanupGameSession(); setChainCount(0); setGameState('deck_building');
@@ -1822,23 +2118,65 @@ const App: React.FC = () => {
           />
         );
 
+      case 'sd_matchmaking':
+        return (
+          <Matchmaking
+            rooms={rooms.filter(r => r.battleType === 'speed_duel')}
+            onJoinRoom={(roomId) => handleJoinRoom(roomId, 'speed_duel')}
+            onCancel={async () => {
+              await leaveRoom(currentRoomId, isHost);
+              cleanupGameSession();
+              setGameState('speed_duel_setup');
+            }}
+            currentRoomId={currentRoomId}
+            user={user}
+            connectionError={firestoreError}
+          />
+        );
+
       case 'speed_duel':
         return sdRound ? (
-          <SpeedDuelBoard
-            round={sdRound}
-            playerHP={sdPlayerHP}
-            opponentHP={sdOpponentHP}
-            playerRoundWins={sdPlayerRoundWins}
-            opponentRoundWins={sdOpponentRoundWins}
-            currentRound={sdCurrentRound}
-            requiredWins={sdGetRequiredWins(sdSetup?.format ?? 'best_of_5')}
-            battleFormat={sdSetup?.format ?? 'best_of_5'}
-            gameMode={sdSetup?.mode ?? 'cpu'}
-            timeRemaining={sdTimeRemaining}
-            onBuzz={sdBuzz}
-            onAnswer={sdAnswer}
-            gameLog={sdGameLog}
-          />
+          <>
+            <SpeedDuelBoard
+              round={sdRound}
+              playerHP={sdPlayerHP}
+              opponentHP={sdOpponentHP}
+              playerRoundWins={sdPlayerRoundWins}
+              opponentRoundWins={sdOpponentRoundWins}
+              currentRound={sdCurrentRound}
+              requiredWins={sdGetRequiredWins(sdSetup?.format ?? 'best_of_5')}
+              battleFormat={sdSetup?.format ?? 'best_of_5'}
+              gameMode={sdSetup?.mode ?? 'cpu'}
+              timeRemaining={sdTimeRemaining}
+              onBuzz={sdBuzz}
+              onAnswer={sdSetup?.mode === 'pvp' ? sdOnlineAnswer : sdAnswer}
+              gameLog={sdGameLog}
+            />
+            {/* 相手切断通知バナー（SD PvP） */}
+            {opponentDisconnected && sdSetup?.mode === 'pvp' && (
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 border border-red-500 rounded-xl px-6 py-3 flex items-center gap-4 shadow-2xl">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-red-200 text-sm font-bold">相手の接続が切れました</span>
+                <button
+                  onClick={async () => {
+                    if (currentRoomId && db) {
+                      await updateDoc(doc(db, 'rooms', currentRoomId), {
+                        status: 'finished',
+                        winnerId: isHost ? 'host' : 'guest',
+                      }).catch(() => {});
+                    }
+                    setWinner('勝利！');
+                    addExp(500);
+                    setMathPoints(p => p + 300);
+                    setGameState('end');
+                  }}
+                  className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  勝利を宣言
+                </button>
+              </div>
+            )}
+          </>
         ) : null;
 
       default:

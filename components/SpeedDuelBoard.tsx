@@ -225,17 +225,27 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
         </div>
 
         {/* Buzz status label */}
-        {phase === 'showing_question' && !round.playerBuzzed && !round.cpuBuzzed && (
+        {phase === 'showing_question' && !round.playerBuzzed && !round.cpuBuzzed && gameMode === 'cpu' && (
           <p className="text-center text-xs text-slate-500 animate-pulse">
             ⚡ BUZZ！ボタンを押して解答権を獲得
           </p>
         )}
-        {phase === 'player_buzzed' && (
+        {phase === 'player_buzzed' && gameMode === 'pvp' && (
+          <p className="text-center text-xs font-bold animate-pulse" style={{ color: '#A855F7' }}>
+            ⏱️ 解答してください！
+          </p>
+        )}
+        {phase === 'player_buzzed' && gameMode === 'cpu' && (
           <p className="text-center text-xs font-bold animate-pulse" style={{ color: '#A855F7' }}>
             ✋ あなたが先押し！解答してください
           </p>
         )}
-        {phase === 'opponent_chance' && (
+        {phase === 'opponent_chance' && gameMode === 'pvp' && (
+          <p className="text-center text-xs font-bold animate-pulse" style={{ color: '#38BDF8' }}>
+            ⏳ 相手の回答を待っています...
+          </p>
+        )}
+        {phase === 'opponent_chance' && gameMode === 'cpu' && (
           <p className="text-center text-xs font-bold animate-pulse" style={{ color: '#F59E0B' }}>
             ⚠️ 相手に解答権が移りました
           </p>
@@ -280,8 +290,8 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
           </div>
         )}
 
-        {/* Opponent chance: show select options too (if they get to answer) */}
-        {phase === 'opponent_chance' && problem.type === 'select' && problem.data.options && (
+        {/* Opponent chance: show select options too (CPU mode - player gets second shot) */}
+        {phase === 'opponent_chance' && gameMode === 'cpu' && problem.type === 'select' && problem.data.options && (
           <div className="w-full max-w-xl mx-auto">
             <div className="grid grid-cols-2 gap-2">
               {problem.data.options.map((opt, i) => (
@@ -294,7 +304,7 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
             </div>
           </div>
         )}
-        {phase === 'opponent_chance' && problem.type === 'input' && (
+        {phase === 'opponent_chance' && gameMode === 'cpu' && problem.type === 'input' && (
           <div className="w-full max-w-xl mx-auto flex gap-2">
             <input value={inputAnswer}
                    onChange={e => setInputAnswer(e.target.value)}
@@ -312,7 +322,7 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
             </button>
           </div>
         )}
-        {phase === 'opponent_chance' && problem.type === 'sort' && problem.data.options && (
+        {phase === 'opponent_chance' && gameMode === 'cpu' && problem.type === 'sort' && problem.data.options && (
           <div className="w-full max-w-xl mx-auto">
             <SortAnswerUI options={problem.data.options} onSubmit={onAnswer} disabled={false} />
           </div>
@@ -352,8 +362,8 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
           </div>
         )}
 
-        {/* BUZZ Button */}
-        {phase === 'showing_question' && !round.playerBuzzed && !round.cpuBuzzed && (
+        {/* BUZZ Button (CPU mode only) */}
+        {phase === 'showing_question' && !round.playerBuzzed && !round.cpuBuzzed && gameMode === 'cpu' && (
           <div className="flex-shrink-0 w-full max-w-xl mx-auto">
             <button onClick={onBuzz}
                     className="w-full py-5 rounded-2xl font-black text-2xl tracking-widest transition-all
@@ -370,8 +380,8 @@ const SpeedDuelBoard: React.FC<SpeedDuelBoardProps> = ({
           </div>
         )}
 
-        {/* CPU buzzed first notice */}
-        {phase === 'showing_question' && round.cpuBuzzed && !round.playerBuzzed && (
+        {/* CPU buzzed first notice (CPU mode only) */}
+        {phase === 'showing_question' && round.cpuBuzzed && !round.playerBuzzed && gameMode === 'cpu' && (
           <div className="text-center py-4">
             <p className="text-sm font-black" style={{ color: '#F87171' }}>CPUが先押し！</p>
             <p className="text-xs text-slate-400 mt-1">解答中...</p>
