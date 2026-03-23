@@ -251,6 +251,8 @@ const App: React.FC = () => {
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   useEffect(() => { currentRoomIdRef.current = currentRoomId; }, [currentRoomId]);
   useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
+  const gameStateRef = useRef<GameState>('login_screen');
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
 
   // ============================
   // localStorage sync
@@ -1260,37 +1262,36 @@ const App: React.FC = () => {
         return;
       }
 
-      // --- デッキバトル: マッチング成立 → ゲーム開始 ---
-      if (data.status === 'playing' && gameState === 'matchmaking') {
+      // --- デッキバトル: マッチング成立 → ゲーム開始 (重複起動防止: processedMatchIdRef) ---
+      if (data.status === 'playing' && gameStateRef.current === 'matchmaking' && processedMatchIdRef.current !== roomId) {
+        processedMatchIdRef.current = roomId;
         const pvpDeck = pendingPvpDeckRef.current.length > 0 ? pendingPvpDeckRef.current : playerDeck;
         setCurrentRound(1);
-        processedMatchIdRef.current = null;
         setTimeout(() => {
           startGame(pvpDeck, false, data);
           setGameState('in_game');
         }, 500);
       }
 
-      // --- スピードデュエル: マッチング成立 → SD開始 ---
-      if (data.status === 'playing' && gameState === 'sd_matchmaking') {
-        processedMatchIdRef.current = null;
+      // --- スピードデュエル: マッチング成立 → SD開始 (重複起動防止: processedMatchIdRef) ---
+      if (data.status === 'playing' && gameStateRef.current === 'sd_matchmaking' && processedMatchIdRef.current !== roomId) {
+        processedMatchIdRef.current = roomId;
         setTimeout(() => {
           const setup: SpeedDuelSetup = pendingSdSetupRef.current ?? {
             categories: (data.sdCategories ?? []) as any,
             format: data.sdFormat ?? 'best_of_5',
             mode: 'pvp',
           };
-          // オンラインSDを開始
           startSdOnline(setup, roomId, isHostVal);
         }, 500);
       }
 
       // --- スピードデュエルPvP: リアルタイム同期 ---
-      if (gameState === 'speed_duel' && data.battleType === 'speed_duel') {
+      if (gameStateRef.current === 'speed_duel' && data.battleType === 'speed_duel') {
         sdHandleRoomUpdate(data, isHostVal);
       }
 
-      if (gameState === 'in_game') {
+      if (gameStateRef.current === 'in_game') {
         setPlayerHP(isHostVal ? data.p1Hp : data.p2Hp);
         setPcHP(isHostVal ? data.p2Hp : data.p1Hp);
 
@@ -1334,7 +1335,13 @@ const App: React.FC = () => {
       alert('PvP対戦にはログインが必要です');
       return;
     }
+    // 既存ルームを Firestore でも終了させてからクリーンアップ（ゾンビ防止）
+    const prevRoomId = currentRoomId;
+    const wasHost = isHost;
     cleanupGameSession(false);
+    if (prevRoomId) {
+      await leaveRoom(prevRoomId, wasHost);
+    }
     try {
       const roomRef = doc(db, 'rooms', roomId);
       const uid = user.uid.trim();
