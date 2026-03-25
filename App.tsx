@@ -27,6 +27,7 @@ import {
   INITIAL_HP, calcDamage, ADMIN_EMAILS, GAMEMASTER_PASSWORD,
   BADGE_DEFS, DAILY_QUEST_DEFS, WEEKLY_QUEST_DEFS, getTodayStr, getWeekStart,
   SHOP_ITEMS, SPEED_DUEL_DAMAGE, SPEED_DUEL_TIME_LIMIT, SPEED_DUEL_SECOND_CHANCE_TIME,
+  ISESAKI_SCHOOLS, DEFAULT_SCHOOL,
 } from './constants';
 import GameBoard from './components/GameBoard';
 import DeckBuilder from './components/DeckBuilder';
@@ -96,11 +97,20 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
-  // --- Student Profile (学年・組・番号) ---
+  // --- Student Profile (学校・学年・組・番号) ---
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(() => {
     try {
       const s = localStorage.getItem('battleMathStudentProfile');
-      return s ? JSON.parse(s) : null;
+      if (!s) return null;
+      const sp = JSON.parse(s);
+      // ③ ローカル移行: school がなければ DEFAULT_SCHOOL を付与
+      if (sp && !sp.school) {
+        sp.school = DEFAULT_SCHOOL;
+        const short = ISESAKI_SCHOOLS.find(sc => sc.name === DEFAULT_SCHOOL)?.short ?? DEFAULT_SCHOOL;
+        sp.displayLabel = `${short} ${sp.grade}年${sp.classNum}組${sp.number}番`;
+        localStorage.setItem('battleMathStudentProfile', JSON.stringify(sp));
+      }
+      return sp;
     } catch { return null; }
   });
 
@@ -308,10 +318,20 @@ const App: React.FC = () => {
             // ゲーミフィケーションデータ読み込み
             if (d.earnedBadgeIds) setEarnedBadgeIds(new Set(d.earnedBadgeIds));
             if (d.totalCorrectAnswers !== undefined) setTotalCorrectAnswers(d.totalCorrectAnswers);
-            // 学年・組・番号情報をFirestoreから復元 (ローカルになければ)
+            // 学校・学年・組・番号情報をFirestoreから復元
+            // ③ 移行: school フィールドがない既存プロファイルは DEFAULT_SCHOOL を付与
             if (d.studentProfile) {
-              setStudentProfile(d.studentProfile);
-              localStorage.setItem('battleMathStudentProfile', JSON.stringify(d.studentProfile));
+              const sp = d.studentProfile;
+              if (!sp.school) {
+                const schoolDef = ISESAKI_SCHOOLS.find(s => s.name === DEFAULT_SCHOOL);
+                const short = schoolDef?.short ?? DEFAULT_SCHOOL;
+                sp.school = DEFAULT_SCHOOL;
+                sp.displayLabel = `${short} ${sp.grade}年${sp.classNum}組${sp.number}番`;
+                // 移行後はFirestoreにも書き戻す
+                updateDoc(doc(db, 'users', u.uid), { studentProfile: sp }).catch(() => {});
+              }
+              setStudentProfile(sp);
+              localStorage.setItem('battleMathStudentProfile', JSON.stringify(sp));
             }
             // ログインストリーク計算
             const today = getTodayStr();
@@ -695,15 +715,27 @@ const App: React.FC = () => {
       snap.forEach(d => {
         const data = d.data() as Room;
         if (!data.roomId) data.roomId = d.id;
-        // クライアント側: 10分以上前のwaitingルームをフィルタ（ゾンビ除去）
+
+        // ── waiting ルーム: 10分以上前のものを自動削除 ──
         if (data.status === 'waiting' && data.createdAt) {
           const createdMs = data.createdAt.toDate ? data.createdAt.toDate().getTime() : 0;
           if (createdMs > 0 && now - createdMs > 10 * 60 * 1000) {
-            // 古いwaitingルームを自動クリーンアップ
             updateDoc(doc(db, 'rooms', d.id), { status: 'finished', winnerId: 'abandoned' }).catch(() => {});
             return;
           }
         }
+
+        // ── playing ルーム: 両プレイヤーのハートビートが10分以上途絶えていたら自動削除 ──
+        if (data.status === 'playing') {
+          const hostMs = data.hostLastActive?.toDate ? data.hostLastActive.toDate().getTime() : 0;
+          const guestMs = data.guestLastActive?.toDate ? data.guestLastActive.toDate().getTime() : 0;
+          const staleThreshold = 10 * 60 * 1000; // 10分（ハートビート120秒の5倍）
+          if (hostMs > 0 && guestMs > 0 && now - hostMs > staleThreshold && now - guestMs > staleThreshold) {
+            updateDoc(doc(db, 'rooms', d.id), { status: 'finished', winnerId: 'abandoned' }).catch(() => {});
+            return;
+          }
+        }
+
         list.push(data);
       });
       setRooms(list);
@@ -1207,23 +1239,65 @@ const App: React.FC = () => {
     return () => clearTimeout(t);
   }, [sdRound?.phase, sdRound?.result, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // エビデンスA: MDN beforeunload + visibilitychange
-  // ブラウザ閉じ/タブ閉じ時にルームをクリーンアップ
+  // ブラウザ閉じ / タブ閉じ / iOS Safari アプリ終了 → ルームをクリーンアップ
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const finishRoom = () => {
       const rid = currentRoomIdRef.current;
       if (!rid || !db) return;
-      // sendBeacon で非同期的にクリーンアップ（信頼性は低いが最善策）
-      // Firestore REST APIへのbeaconは複雑なため、updateDocを試みる
-      const roomRef = doc(db, 'rooms', rid);
-      updateDoc(roomRef, {
+      updateDoc(doc(db, 'rooms', rid), {
         status: 'finished',
         winnerId: isHostRef.current ? 'guest' : 'host',
       }).catch(() => {});
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+
+    // beforeunload: デスクトップブラウザ向け
+    window.addEventListener('beforeunload', finishRoom);
+    // pagehide: iOS Safari / モバイルブラウザ向け（beforeunloadより信頼性が高い）
+    window.addEventListener('pagehide', finishRoom);
+
+    return () => {
+      window.removeEventListener('beforeunload', finishRoom);
+      window.removeEventListener('pagehide', finishRoom);
+    };
   }, []);
+
+  // visibilitychange: iPadをロック / アプリをバックグラウンドにして長時間戻らなかった場合
+  // → 復帰時にルームを確認し、長時間離席していたら終了してメニューへ
+  useEffect(() => {
+    let hiddenAt = 0;
+    const AWAY_LIMIT = 5 * 60 * 1000; // 5分
+
+    const handleVisibility = () => {
+      const rid = currentRoomIdRef.current;
+      if (document.visibilityState === 'hidden') {
+        if (rid) hiddenAt = Date.now();
+      } else {
+        if (hiddenAt > 0 && rid && rid === currentRoomIdRef.current) {
+          const away = Date.now() - hiddenAt;
+          hiddenAt = 0;
+          if (away > AWAY_LIMIT) {
+            // 5分以上離席 → 対戦継続不可と判断し自分の側から終了
+            updateDoc(doc(db!, 'rooms', rid), {
+              status: 'finished',
+              winnerId: 'abandoned',
+            }).catch(() => {});
+            cleanupGameSession();
+            const gs = gameStateRef.current;
+            if (gs === 'speed_duel' || gs === 'sd_matchmaking') {
+              setGameState('speed_duel_setup');
+            } else {
+              setGameState('deck_building');
+            }
+          }
+        } else {
+          hiddenAt = 0;
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [cleanupGameSession]);
 
   const listenToRoom = (roomId: string) => {
     if (!db) return;
@@ -2233,8 +2307,7 @@ const App: React.FC = () => {
           <ClassBattleBoard
             db={db}
             onClose={() => setShowClassBattle(false)}
-            currentGrade={studentProfile?.grade}
-            currentClass={studentProfile?.classNum}
+            currentSchool={studentProfile?.school}
           />
         )}
         {showWeaknessPanel && (

@@ -24,6 +24,24 @@ export const SPEED_DUEL_SECOND_CHANCE_TIME = 6000;
 export const calcDamage = (difficulty: number): number =>
   Math.round(difficulty * 1.5 + 1);
 
+// ── 伊勢崎市立中学校・中等教育学校リスト ──────────────────────────────────
+export const ISESAKI_SCHOOLS: { name: string; short: string }[] = [
+  { name: '第一中学校',             short: '第一中'   },
+  { name: '第二中学校',             short: '第二中'   },
+  { name: '第三中学校',             short: '第三中'   },
+  { name: '第四中学校',             short: '第四中'   },
+  { name: '殖蓮中学校',             short: '殖蓮中'   },
+  { name: '宮郷中学校',             short: '宮郷中'   },
+  { name: '赤堀中学校',             short: '赤堀中'   },
+  { name: 'あずま中学校',           short: 'あずま中' },
+  { name: '境北中学校',             short: '境北中'   },
+  { name: '境西中学校',             short: '境西中'   },
+  { name: '境南中学校',             short: '境南中'   },
+  { name: '四ツ葉学園中等教育学校', short: '四ツ葉学園' },
+];
+
+export const DEFAULT_SCHOOL = '第三中学校';
+
 // Admin settings
 export const ADMIN_EMAILS: string[] = []; // Add admin email addresses here
 export const GAMEMASTER_PASSWORD = '215124'; // Change in production
