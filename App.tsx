@@ -27,6 +27,7 @@ import {
   INITIAL_HP, calcDamage, ADMIN_EMAILS, GAMEMASTER_PASSWORD,
   BADGE_DEFS, DAILY_QUEST_DEFS, WEEKLY_QUEST_DEFS, getTodayStr, getWeekStart,
   SHOP_ITEMS, SPEED_DUEL_DAMAGE, SPEED_DUEL_TIME_LIMIT, SPEED_DUEL_SECOND_CHANCE_TIME,
+  ISESAKI_SCHOOLS, DEFAULT_SCHOOL,
 } from './constants';
 import GameBoard from './components/GameBoard';
 import DeckBuilder from './components/DeckBuilder';
@@ -96,11 +97,20 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
-  // --- Student Profile (学年・組・番号) ---
+  // --- Student Profile (学校・学年・組・番号) ---
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(() => {
     try {
       const s = localStorage.getItem('battleMathStudentProfile');
-      return s ? JSON.parse(s) : null;
+      if (!s) return null;
+      const sp = JSON.parse(s);
+      // ③ ローカル移行: school がなければ DEFAULT_SCHOOL を付与
+      if (sp && !sp.school) {
+        sp.school = DEFAULT_SCHOOL;
+        const short = ISESAKI_SCHOOLS.find(sc => sc.name === DEFAULT_SCHOOL)?.short ?? DEFAULT_SCHOOL;
+        sp.displayLabel = `${short} ${sp.grade}年${sp.classNum}組${sp.number}番`;
+        localStorage.setItem('battleMathStudentProfile', JSON.stringify(sp));
+      }
+      return sp;
     } catch { return null; }
   });
 
@@ -308,10 +318,20 @@ const App: React.FC = () => {
             // ゲーミフィケーションデータ読み込み
             if (d.earnedBadgeIds) setEarnedBadgeIds(new Set(d.earnedBadgeIds));
             if (d.totalCorrectAnswers !== undefined) setTotalCorrectAnswers(d.totalCorrectAnswers);
-            // 学年・組・番号情報をFirestoreから復元 (ローカルになければ)
+            // 学校・学年・組・番号情報をFirestoreから復元
+            // ③ 移行: school フィールドがない既存プロファイルは DEFAULT_SCHOOL を付与
             if (d.studentProfile) {
-              setStudentProfile(d.studentProfile);
-              localStorage.setItem('battleMathStudentProfile', JSON.stringify(d.studentProfile));
+              const sp = d.studentProfile;
+              if (!sp.school) {
+                const schoolDef = ISESAKI_SCHOOLS.find(s => s.name === DEFAULT_SCHOOL);
+                const short = schoolDef?.short ?? DEFAULT_SCHOOL;
+                sp.school = DEFAULT_SCHOOL;
+                sp.displayLabel = `${short} ${sp.grade}年${sp.classNum}組${sp.number}番`;
+                // 移行後はFirestoreにも書き戻す
+                updateDoc(doc(db, 'users', u.uid), { studentProfile: sp }).catch(() => {});
+              }
+              setStudentProfile(sp);
+              localStorage.setItem('battleMathStudentProfile', JSON.stringify(sp));
             }
             // ログインストリーク計算
             const today = getTodayStr();
@@ -2287,8 +2307,7 @@ const App: React.FC = () => {
           <ClassBattleBoard
             db={db}
             onClose={() => setShowClassBattle(false)}
-            currentGrade={studentProfile?.grade}
-            currentClass={studentProfile?.classNum}
+            currentSchool={studentProfile?.school}
           />
         )}
         {showWeaknessPanel && (
