@@ -9,3 +9,38 @@
   display: block;
   margin: 0 auto;
 }
+
+/* ── Card 3D Flip ──────────────────────────────────────────────────────────── */
+.card-container {
+  perspective: 1200px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.card-inner {
+  position: relative;
+  display: inline-block;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-back {
+  display: block;
+  line-height: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-front {
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 0;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
