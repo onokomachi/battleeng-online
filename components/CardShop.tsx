@@ -79,50 +79,54 @@ const PackOpeningView: React.FC<{
 
   if (stage === 'presenting') {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-4 text-white bg-black/90 backdrop-blur-xl animate-math-fade-in z-[100]">
-        <h2 className="text-4xl font-bold text-cyan-300 mb-12 tracking-wide">パック開封中...</h2>
-        <div 
-          className="w-56 h-80 bg-gradient-to-br from-cyan-900 to-blue-950 border-2 border-cyan-400/60 rounded-xl shadow-[0_0_50px_rgba(34,211,238,0.3)] flex items-center justify-center p-4 cursor-pointer transform hover:scale-110 transition-all duration-500 animate-pulse-slow group"
-          onClick={() => setStage('revealing')}
-        >
-           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.2)_0%,transparent_70%)] animate-pulse"></div>
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-cyan-400 group-hover:rotate-90 transition-transform duration-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+      <div className="w-full h-full overflow-y-auto bg-black/90 backdrop-blur-xl animate-math-fade-in z-[100]">
+        <div className="min-h-full flex flex-col items-center justify-center p-4 text-white">
+          <h2 className="text-4xl font-bold text-cyan-300 mb-12 tracking-wide">パック開封中...</h2>
+          <div
+            className="w-56 h-80 bg-gradient-to-br from-cyan-900 to-blue-950 border-2 border-cyan-400/60 rounded-xl shadow-[0_0_50px_rgba(34,211,238,0.3)] flex items-center justify-center p-4 cursor-pointer transform hover:scale-110 transition-all duration-500 animate-pulse-slow group relative"
+            onClick={() => setStage('revealing')}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.2)_0%,transparent_70%)] animate-pulse rounded-xl"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-cyan-400 group-hover:rotate-90 transition-transform duration-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+          </div>
+          <p className="mt-12 text-cyan-600 text-sm font-bold">タップして開封</p>
         </div>
-        <p className="mt-12 text-cyan-600 text-sm font-bold">タップして開封</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-4 text-white bg-black/90 backdrop-blur-2xl z-[100]">
-      <h2 className="text-4xl font-bold text-cyan-300 mb-12 tracking-wide">新しいカードを入手！</h2>
-      <div className="flex flex-wrap justify-center items-center gap-10 h-96">
-        {pack.map((card, index) => (
-          <div
-            key={index}
-            className="card-container animate-math-fade-in"
-            style={{ animationDelay: `${index * 200}ms` }}
-            onClick={() => handleRevealCard(index)}
-          >
-            <div className={`card-inner ${revealed[index] ? 'is-flipped' : ''}`}>
-              <div className="card-back">
-                <CardBack />
-              </div>
-              <div className="card-front">
-                <Card card={card} />
+    <div className="w-full h-full overflow-y-auto bg-black/90 backdrop-blur-2xl z-[100]">
+      <div className="min-h-full flex flex-col items-center justify-center p-4 text-white">
+        <h2 className="text-4xl font-bold text-cyan-300 mb-8 tracking-wide">新しいカードを入手！</h2>
+        <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 py-4">
+          {pack.map((card, index) => (
+            <div
+              key={index}
+              className="card-container animate-math-fade-in"
+              style={{ animationDelay: `${index * 200}ms` }}
+              onClick={() => handleRevealCard(index)}
+            >
+              <div className={`card-inner ${revealed[index] ? 'is-flipped' : ''}`}>
+                <div className="card-back">
+                  <CardBack />
+                </div>
+                <div className="card-front">
+                  <Card card={card} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {allRevealed && (
+          <button
+            onClick={onFinish}
+            className="mt-10 btn-tactical px-12 py-4 rounded-xl text-xl font-bold text-cyan-400 animate-level-up-reveal"
+          >
+            ショップに戻る
+          </button>
+        )}
       </div>
-      {allRevealed && (
-         <button
-          onClick={onFinish}
-          className="mt-16 btn-tactical px-12 py-4 rounded-xl text-xl font-bold text-cyan-400 animate-level-up-reveal"
-        >
-          ショップに戻る
-        </button>
-      )}
     </div>
   );
 };
