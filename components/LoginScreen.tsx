@@ -41,7 +41,8 @@ const ProfileSetup: React.FC<{
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4 overflow-y-auto">
+    <div className="w-full h-full overflow-y-auto">
+      <div className="min-h-full flex items-center justify-center p-4">
       <div className="w-full max-w-lg animate-slide-up py-4">
         {/* Header */}
         <div className="text-center mb-6">
@@ -162,6 +163,7 @@ const ProfileSetup: React.FC<{
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 };
@@ -187,7 +189,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-3 sm:p-4 lg:p-8 overflow-y-auto">
+    <div className="w-full h-full overflow-y-auto">
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 lg:p-8">
       <div className="w-full max-w-md animate-slide-up">
         {/* Game Title */}
         <div className="text-center mb-8 sm:mb-10">
@@ -288,6 +291,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             </p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
