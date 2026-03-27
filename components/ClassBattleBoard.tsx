@@ -175,7 +175,7 @@ const ClassBattleBoard: React.FC<ClassBattleBoardProps> = ({ db, onClose, curren
         </div>
 
         {/* Rankings */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3">
           {loading ? (
             <div className="text-center text-gray-500 py-12 font-mono text-sm">データ集計中...</div>
           ) : schoolStats.length === 0 ? (

@@ -99,7 +99,7 @@ const ItemShop: React.FC<ItemShopProps> = ({
         )}
 
         {/* Item list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
           {filteredItems.map(item => {
             const owned = ownedItems.has(item.id);
             const equipped = item.type === 'title' && equippedTitle === item.id;
