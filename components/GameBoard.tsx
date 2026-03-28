@@ -5,6 +5,7 @@ import Card, { CardBack } from './Card';
 import GameLog from './GameLog';
 import DrawingCanvas from './DrawingCanvas';
 import { PencilIcon } from './Icons';
+import { THEME_CONFIGS } from '../constants';
 
 
 // --- ProblemSolver Component ---
@@ -227,6 +228,7 @@ interface GameBoardProps {
   playerRoundWins?: number;
   pcRoundWins?: number;
   currentRound?: number;
+  battleTheme?: string | null;
 }
 
 const ScoreDisplay: React.FC<{ score: number; label: string; maxScore: number; isPlayer: boolean }> = ({ score, label, maxScore, isPlayer }) => (
@@ -273,8 +275,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
   playerRoundWins = 0,
   pcRoundWins = 0,
   currentRound = 1,
+  battleTheme,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
+  const themeConfig = battleTheme ? THEME_CONFIGS[battleTheme] : null;
 
   const isPlayerSecond = initiative === 'pc';
   const playerMustMatchLevel = isPlayerSecond && pcPlayedCard !== null && playerPlayedCard === null;
@@ -284,7 +288,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
     : false;
 
   return (
-    <div className="w-full h-full flex flex-col justify-between items-center p-3 sm:p-4 md:p-6 relative overflow-hidden overflow-y-auto">
+    <div className={`w-full h-full flex flex-col justify-between items-center p-3 sm:p-4 md:p-6 relative overflow-hidden overflow-y-auto${themeConfig ? ` ${themeConfig.bgClass}` : ''}`}>
       {/* Star Field Decorations */}
       <div className="absolute top-10 left-10 w-20 h-20 bg-blue-500/5 blur-[60px] rounded-full"></div>
       <div className="absolute bottom-20 right-20 w-32 h-32 bg-cyan-500/5 blur-[80px] rounded-full"></div>

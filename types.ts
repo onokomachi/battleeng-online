@@ -104,6 +104,34 @@ export interface UserProfile {
   };
 }
 
+// --- 称号システム ---
+export type TitleConditionType =
+  | 'total_correct' | 'total_wins' | 'login_streak' | 'level'
+  | 'badge_owned' | 'category_master' | 'monthly_top1' | 'any';
+
+export interface TitleCondition {
+  type: TitleConditionType;
+  value?: number;
+  badgeId?: string;
+}
+
+export interface TitleDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  condition: TitleCondition;
+  isMonthly?: boolean;
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+// --- ブースター ---
+export interface ActiveBooster {
+  type: 'mp_booster' | 'exp_booster';
+  expiresAt: number;
+  multiplier: number;
+}
+
 /** MPシンク: 購入可能アイテム定義 */
 export interface ShopItemDef {
   id: string;
@@ -111,7 +139,8 @@ export interface ShopItemDef {
   description: string;
   cost: number;
   icon: string;
-  type: 'title' | 'streak_shield' | 'theme';
+  type: 'title' | 'streak_shield' | 'theme' | 'mp_booster' | 'hint_token' | 'exp_booster';
+  durationMs?: number;
 }
 
 export type BattleMode = 'cpu' | 'pvp';

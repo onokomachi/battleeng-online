@@ -1,5 +1,5 @@
 
-import type { Problem, ProblemCard, CategoryDef, EnglishCategory, Ability, AbilityType, DailyQuestDef, BadgeDef, ShopItemDef } from './types';
+import type { Problem, ProblemCard, CategoryDef, EnglishCategory, Ability, AbilityType, DailyQuestDef, BadgeDef, ShopItemDef, TitleDef } from './types';
 import { ENGLISH_PROBLEMS } from './data/index';
 
 export const MAX_SCORE = 5;
@@ -451,23 +451,69 @@ export const WEEKLY_QUEST_DEFS: DailyQuestDef[] = [
   { id: 'wq_100', title: '週100問マスター', description: '今週100問正解しよう', target: 100, reward: { mp: 2000, exp: 1000 }, icon: '👑' },
 ];
 
+// ============================
+// 称号定義 (全条件達成で自動付与)
+// ============================
+export const TITLE_DEFS: TitleDef[] = [
+  // --- 初期 ---
+  { id: 'title_newcomer', name: '新入生', description: 'ゲームを始めた証', icon: '🔰', condition: { type: 'any' }, rarity: 'common' },
+  // --- 正解数 ---
+  { id: 'title_correct_50', name: '問題解き師', description: '50問正解した', icon: '📝', condition: { type: 'total_correct', value: 50 }, rarity: 'common' },
+  { id: 'title_correct_100', name: '百問突破', description: '100問正解した', icon: '💯', condition: { type: 'total_correct', value: 100 }, rarity: 'common' },
+  { id: 'title_correct_500', name: '解答機械', description: '500問正解した', icon: '⚙️', condition: { type: 'total_correct', value: 500 }, rarity: 'rare' },
+  { id: 'title_correct_1000', name: '千問達人', description: '1000問正解した', icon: '🏅', condition: { type: 'total_correct', value: 1000 }, rarity: 'rare' },
+  { id: 'title_correct_5000', name: '万能数学者', description: '5000問正解した', icon: '🌟', condition: { type: 'total_correct', value: 5000 }, rarity: 'epic' },
+  // --- PvPバトル ---
+  { id: 'title_first_pvp_win', name: '初陣', description: 'はじめてPvPで勝利した', icon: '⚔️', condition: { type: 'badge_owned', badgeId: 'first_pvp_win' }, rarity: 'common' },
+  { id: 'title_pvp_10wins', name: '闘士', description: 'PvPで10勝した', icon: '🗡️', condition: { type: 'badge_owned', badgeId: 'pvp_10wins' }, rarity: 'common' },
+  { id: 'title_pvp_50wins', name: '戦士', description: 'PvPで50勝した', icon: '🏆', condition: { type: 'badge_owned', badgeId: 'pvp_50wins' }, rarity: 'rare' },
+  { id: 'title_pvp_100wins', name: '猛将', description: '100勝達成', icon: '👑', condition: { type: 'total_wins', value: 100 }, rarity: 'epic' },
+  // --- ログインストリーク ---
+  { id: 'title_streak_3', name: '習慣者', description: '3日連続ログイン', icon: '🔥', condition: { type: 'login_streak', value: 3 }, rarity: 'common' },
+  { id: 'title_streak_7', name: '精勤', description: '7日連続ログイン', icon: '🔥', condition: { type: 'login_streak', value: 7 }, rarity: 'common' },
+  { id: 'title_streak_30', name: '皆勤賞', description: '30日連続ログイン', icon: '🏆', condition: { type: 'login_streak', value: 30 }, rarity: 'epic' },
+  { id: 'title_streak_90', name: '鉄人', description: '90日連続ログイン', icon: '🔥', condition: { type: 'login_streak', value: 90 }, rarity: 'legendary' },
+  // --- 連鎖 ---
+  { id: 'title_chain_5', name: '連続正解者', description: '5問連続正解した', icon: '⚡', condition: { type: 'badge_owned', badgeId: 'chain_5' }, rarity: 'common' },
+  { id: 'title_chain_10', name: '怒涛の連撃', description: '10問連続正解した', icon: '⚡', condition: { type: 'badge_owned', badgeId: 'chain_10' }, rarity: 'rare' },
+  { id: 'title_chain_20', name: '無敵連鎖', description: '20問連続正解した', icon: '⚡', condition: { type: 'badge_owned', badgeId: 'chain_20' }, rarity: 'epic' },
+  // --- レベル ---
+  { id: 'title_level_10', name: '一人前', description: 'レベル10に到達', icon: '📈', condition: { type: 'level', value: 10 }, rarity: 'common' },
+  { id: 'title_level_30', name: '熟練者', description: 'レベル30に到達', icon: '🎖️', condition: { type: 'level', value: 30 }, rarity: 'rare' },
+  { id: 'title_level_50', name: '上級者', description: 'レベル50に到達', icon: '🌠', condition: { type: 'level', value: 50 }, rarity: 'epic' },
+  // --- 分野マスター ---
+  { id: 'title_master_polynomial', name: '式の計算マスター', description: '式の計算を極めた', icon: '📐', condition: { type: 'badge_owned', badgeId: 'master_polynomial' }, rarity: 'rare' },
+  { id: 'title_master_geometry', name: '図形の達人', description: '図形問題を極めた', icon: '📏', condition: { type: 'badge_owned', badgeId: 'master_geometry' }, rarity: 'rare' },
+  { id: 'title_all_master', name: '全科目制覇', description: '全カテゴリ正答率85%以上', icon: '🎓', condition: { type: 'badge_owned', badgeId: 'all_master' }, rarity: 'legendary' },
+  // --- スペシャル ---
+  { id: 'title_perfect_battle', name: '完璧主義者', description: 'HP満タンで勝利した', icon: '💎', condition: { type: 'badge_owned', badgeId: 'perfect_battle' }, rarity: 'epic' },
+  { id: 'title_comeback', name: '逆転の帝王', description: 'HP5以下から勝利した', icon: '🔄', condition: { type: 'badge_owned', badgeId: 'comeback' }, rarity: 'rare' },
+  { id: 'title_speed_demon', name: 'スピードデーモン', description: '3秒以内に正解した', icon: '⏱️', condition: { type: 'badge_owned', badgeId: 'speed_demon' }, rarity: 'rare' },
+  // --- 月次チャンピオン ---
+  { id: 'title_monthly_champion', name: '数学王', description: '今月のトップ1位', icon: '👑', condition: { type: 'monthly_top1' }, isMonthly: true, rarity: 'legendary' },
+];
+
 /**
- * MPシンク — 称号・ストリークシールド・テーマ
+ * MPシンク — ストリークシールド・テーマ・消耗品
  * エビデンスB: 仮想経済バランス（Castronova 2005）
  *   消費先がないとインフレ → モチベーション低下
  */
 export const SHOP_ITEMS: ShopItemDef[] = [
-  // 称号（プレイヤー名横に表示）
-  { id: 'title_beginner', name: '英語初心者', description: '最初の一歩を踏み出した証', cost: 500, icon: '🔰', type: 'title' },
-  { id: 'title_challenger', name: '挑戦者', description: '果敢に問題に挑む姿勢', cost: 1500, icon: '⚡', type: 'title' },
-  { id: 'title_strategist', name: '戦略家', description: 'デッキ構築の達人', cost: 3000, icon: '🧠', type: 'title' },
-  { id: 'title_speaker', name: '英語の鬼', description: '解答速度に定評あり', cost: 5000, icon: '🔥', type: 'title' },
-  { id: 'title_master', name: '英語マスター', description: '全文法を制覇した者', cost: 10000, icon: '👑', type: 'title' },
-  { id: 'title_legend', name: '伝説の英語使い', description: '最高峰の称号', cost: 25000, icon: '🌟', type: 'title' },
   // ストリークシールド（ログイン連続日数を1回保護）
   { id: 'streak_shield', name: 'ストリークシールド', description: 'ログイン途切れを1回だけ防ぐ', cost: 2000, icon: '🛡️', type: 'streak_shield' },
   // バトルテーマ
   { id: 'theme_fire', name: '炎のテーマ', description: 'バトル画面が炎に包まれる', cost: 4000, icon: '🔴', type: 'theme' },
   { id: 'theme_ice', name: '氷のテーマ', description: '冷徹な戦場で戦う', cost: 4000, icon: '🔵', type: 'theme' },
   { id: 'theme_gold', name: '黄金のテーマ', description: '栄光のゴールドバトル', cost: 8000, icon: '🟡', type: 'theme' },
+  // 消耗品
+  { id: 'mp_booster', name: '2倍MPブースター', description: '1時間MPが2倍になる', cost: 3000, icon: '⚡', type: 'mp_booster', durationMs: 3600000 },
+  { id: 'hint_token', name: 'ヒントトークン', description: 'バトル中に使えるヒント', cost: 500, icon: '💡', type: 'hint_token' },
+  { id: 'exp_booster', name: '経験値ブースター', description: '次のバトルでEXP2倍', cost: 1500, icon: '🌟', type: 'exp_booster' },
 ];
+
+// バトルテーマ設定
+export const THEME_CONFIGS: Record<string, { bgClass: string; accentColor: string }> = {
+  theme_fire: { bgClass: 'bg-gradient-to-br from-red-950 via-orange-900/20 to-red-950', accentColor: '#ef4444' },
+  theme_ice: { bgClass: 'bg-gradient-to-br from-blue-950 via-cyan-900/20 to-slate-950', accentColor: '#06b6d4' },
+  theme_gold: { bgClass: 'bg-gradient-to-br from-amber-950 via-yellow-900/20 to-amber-950', accentColor: '#f59e0b' },
+};
