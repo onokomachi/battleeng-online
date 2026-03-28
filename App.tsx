@@ -21,13 +21,14 @@ import {
   runTransaction, where, orderBy, limit, Timestamp, deleteDoc
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile, Problem, SpeedDuelSetup, SpeedDuelRound } from './types';
+import type { ProblemCard, TurnPhase, GameState, TurnInitiative, Room, BattleMode, BattleFormat, BadgeDef, StudentProfile, Problem, SpeedDuelSetup, SpeedDuelRound, ActiveBooster } from './types';
 import {
   CARD_DEFINITIONS, HAND_SIZE, DECK_SIZE,
   INITIAL_HP, calcDamage, ADMIN_EMAILS, GAMEMASTER_PASSWORD,
   BADGE_DEFS, DAILY_QUEST_DEFS, WEEKLY_QUEST_DEFS, getTodayStr, getWeekStart,
   SHOP_ITEMS, SPEED_DUEL_DAMAGE, SPEED_DUEL_TIME_LIMIT, SPEED_DUEL_SECOND_CHANCE_TIME,
   ISESAKI_SCHOOLS, DEFAULT_SCHOOL, DEFAULT_SCHOOL_YEAR, getCurrentSchoolYear,
+  TITLE_DEFS, THEME_CONFIGS,
 } from './constants';
 import GameBoard from './components/GameBoard';
 import DeckBuilder from './components/DeckBuilder';
@@ -238,6 +239,52 @@ const App: React.FC = () => {
     return localStorage.getItem('bm_tutorial_done') === '1';
   });
 
+  // --- 称号 ---
+  const [earnedTitleIds, setEarnedTitleIds] = useState<Set<string>>(() => {
+    try {
+      const s = localStorage.getItem('bm_earned_titles');
+      return s ? new Set(JSON.parse(s)) : new Set(['title_newcomer']);
+    } catch { return new Set(['title_newcomer']); }
+  });
+  // earnedTitleIds の最新値をコールバック内で参照するための ref
+  const earnedTitleIdsRef = useRef<Set<string>>(new Set(['title_newcomer']));
+  useEffect(() => { earnedTitleIdsRef.current = earnedTitleIds; }, [earnedTitleIds]);
+
+  // --- テーマ ---
+  const [equippedTheme, setEquippedTheme] = useState<string | null>(() => {
+    try { return localStorage.getItem('bm_equipped_theme') || null; }
+    catch { return null; }
+  });
+
+  // --- 消耗品 ---
+  const [hintTokens, setHintTokens] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem('bm_hint_tokens') || '0', 10); }
+    catch { return 0; }
+  });
+  const [activeBooster, setActiveBooster] = useState<ActiveBooster | null>(() => {
+    try {
+      const s = localStorage.getItem('bm_active_booster');
+      if (!s) return null;
+      const b: ActiveBooster = JSON.parse(s);
+      return b.expiresAt > Date.now() ? b : null;
+    } catch { return null; }
+  });
+  const [expBoosterActive, setExpBoosterActive] = useState<boolean>(() => {
+    try { return localStorage.getItem('bm_exp_booster') === '1'; }
+    catch { return false; }
+  });
+  const [mpBoosterSecondsLeft, setMpBoosterSecondsLeft] = useState(0);
+
+  // --- ストリークシールド ---
+  const [hasStreakShield, setHasStreakShield] = useState(false);
+  const [shieldUsedThisSession, setShieldUsedThisSession] = useState(false);
+
+  // --- 総勝利数（称号条件チェック用） ---
+  const [totalWins, setTotalWins] = useState(0);
+
+  // --- 月次チャンピオン確認済みフラグ ---
+  const hasCheckedMonthlyRef = useRef(false);
+
   // --- Speed Duel State ---
   const [sdSetup, setSdSetup] = useState<SpeedDuelSetup | null>(null);
   const [sdRound, setSdRound] = useState<SpeedDuelRound | null>(null);
@@ -286,7 +333,15 @@ const App: React.FC = () => {
     localStorage.setItem('bm_owned_shop_items', JSON.stringify(Array.from(ownedShopItems)));
     if (equippedTitle) localStorage.setItem('bm_equipped_title', equippedTitle);
     else localStorage.removeItem('bm_equipped_title');
-  }, [mathPoints, ownedCardIds, playerLevel, playerExp, userLevelStats, studentProfile, ownedShopItems, equippedTitle]);
+    // 称号・テーマ・消耗品
+    localStorage.setItem('bm_earned_titles', JSON.stringify(Array.from(earnedTitleIds)));
+    if (equippedTheme) localStorage.setItem('bm_equipped_theme', equippedTheme);
+    else localStorage.removeItem('bm_equipped_theme');
+    localStorage.setItem('bm_hint_tokens', String(hintTokens));
+    if (activeBooster) localStorage.setItem('bm_active_booster', JSON.stringify(activeBooster));
+    else localStorage.removeItem('bm_active_booster');
+    localStorage.setItem('bm_exp_booster', expBoosterActive ? '1' : '0');
+  }, [mathPoints, ownedCardIds, playerLevel, playerExp, userLevelStats, studentProfile, ownedShopItems, equippedTitle, earnedTitleIds, equippedTheme, hintTokens, activeBooster, expBoosterActive]);
 
   const ownedCards = useMemo(
     () => CARD_DEFINITIONS.filter(c => ownedCardIds.has(c.id)),
@@ -345,6 +400,11 @@ const App: React.FC = () => {
             // ゲーミフィケーションデータ読み込み
             if (d.earnedBadgeIds) setEarnedBadgeIds(new Set(d.earnedBadgeIds));
             if (d.totalCorrectAnswers !== undefined) setTotalCorrectAnswers(d.totalCorrectAnswers);
+            if (d.totalWins !== undefined) setTotalWins(d.totalWins);
+            if (d.hasStreakShield !== undefined) setHasStreakShield(!!d.hasStreakShield);
+            if (d.earnedTitleIds) {
+              setEarnedTitleIds(new Set([...d.earnedTitleIds, 'title_newcomer']));
+            }
             // 学校・学年・組・番号情報をFirestoreから復元
             // ③ 移行: school フィールドがない既存プロファイルは DEFAULT_SCHOOL を付与
             if (d.studentProfile) {
@@ -376,7 +436,17 @@ const App: React.FC = () => {
             const lastLogin: string = d.lastLoginDate || '';
             let newStreak: number = d.loginStreak || 0;
             if (lastLogin !== today) {
-              newStreak = lastLogin === yesterdayStr ? newStreak + 1 : 1;
+              if (lastLogin === yesterdayStr) {
+                newStreak = newStreak + 1;
+              } else if (d.hasStreakShield && lastLogin) {
+                // ストリークシールド発動: ストリーク保持
+                newStreak = newStreak;
+                setShieldUsedThisSession(true);
+                setHasStreakShield(false);
+                updateDoc(ref, { hasStreakShield: false }).catch(() => {});
+              } else {
+                newStreak = 1;
+              }
               await updateDoc(ref, { loginStreak: newStreak, lastLoginDate: today }).catch(() => {});
               // Show login bonus modal automatically on new day
               setLoginBonusClaimed(false);
@@ -434,6 +504,24 @@ const App: React.FC = () => {
   }, [user]);
 
   // ============================
+  // addMathPoints — MPブースター対応ヘルパー
+  // Q3=C: 全setMathPoints(p => p + X)をこれ経由に統一
+  // ============================
+  const activeBoosterRef = useRef<ActiveBooster | null>(null);
+  useEffect(() => { activeBoosterRef.current = activeBooster; }, [activeBooster]);
+
+  const addMathPoints = useCallback((amount: number): number => {
+    const b = activeBoosterRef.current;
+    const mult = (b && b.type === 'mp_booster' && b.expiresAt > Date.now()) ? b.multiplier : 1;
+    const actual = Math.round(amount * mult);
+    setMathPoints(p => p + actual);
+    if (user && db && actual !== 0) {
+      updateDoc(doc(db, 'users', user.uid), { mathPoints: increment(actual) }).catch(() => {});
+    }
+    return actual;
+  }, [user]);
+
+  // ============================
   // バッジ獲得
   // エビデンスB: 自己決定理論 × 有能感フィードバック（Deci & Ryan 1985）
   // ============================
@@ -443,17 +531,16 @@ const App: React.FC = () => {
       const badge = BADGE_DEFS.find(b => b.id === badgeId);
       if (!badge) return prev;
       setPendingBadge(badge);
-      setMathPoints(p => p + 100);
-      // Firestore にバッジ追加 (arrayUnion で冪等性確保)
+      addMathPoints(100);
+      // Firestore にバッジ追加 (arrayUnion で冪等性確保、mathPointsはaddMathPoints側で処理)
       if (user && db) {
         updateDoc(doc(db, 'users', user.uid), {
           earnedBadgeIds: arrayUnion(badgeId),
-          mathPoints: increment(100),
         }).catch(() => {});
       }
       return new Set(prev).add(badgeId);
     });
-  }, [user]);
+  }, [user, addMathPoints]);
 
   // ============================
   // クエスト進捗更新
@@ -479,10 +566,7 @@ const App: React.FC = () => {
         DAILY_QUEST_DEFS.forEach(q => {
           if (!newDone.has(q.id) && (next[q.id] || 0) >= q.target) {
             newDone.add(q.id);
-            setMathPoints(p => p + q.reward.mp);
-            if (user && db) {
-              updateDoc(doc(db, 'users', user.uid), { mathPoints: increment(q.reward.mp) }).catch(() => {});
-            }
+            addMathPoints(q.reward.mp);
           }
         });
         localStorage.setItem(`${dqKey}_done`, JSON.stringify([...newDone]));
@@ -505,10 +589,7 @@ const App: React.FC = () => {
         WEEKLY_QUEST_DEFS.forEach(q => {
           if (!newDone.has(q.id) && (next[q.id] || 0) >= q.target) {
             newDone.add(q.id);
-            setMathPoints(p => p + q.reward.mp);
-            if (user && db) {
-              updateDoc(doc(db, 'users', user.uid), { mathPoints: increment(q.reward.mp) }).catch(() => {});
-            }
+            addMathPoints(q.reward.mp);
           }
         });
         localStorage.setItem(`${wqKey}_done`, JSON.stringify([...newDone]));
@@ -516,7 +597,7 @@ const App: React.FC = () => {
       });
       return next;
     });
-  }, [user]);
+  }, [user, addMathPoints]);
 
   // ============================
   // 正解イベント統合処理
@@ -648,26 +729,52 @@ const App: React.FC = () => {
 
   const handleClaimLoginBonus = useCallback(() => {
     const reward = getLoginReward(loginStreak);
-    setMathPoints(p => p + reward);
+    addMathPoints(reward);
     setLoginBonusClaimed(true);
     if (user && db) {
+      // addMathPoints が mathPoints の Firestore 更新を処理するため loginBonusClaimedDate のみ更新
       updateDoc(doc(db, 'users', user.uid), {
-        mathPoints: increment(reward),
         loginBonusClaimedDate: getTodayStr(),
       }).catch(() => {});
     }
-  }, [loginStreak, user]);
+  }, [loginStreak, user, addMathPoints]);
 
   const handleShopPurchase = useCallback((item: ShopItemDef) => {
-    if (ownedShopItems.has(item.id) || mathPoints < item.cost) return;
+    // 購入前チェック
+    if (mathPoints < item.cost) return;
+    if (item.type === 'theme' && ownedShopItems.has(item.id)) return;
+    if (item.type === 'streak_shield' && hasStreakShield) return;
+
+    // MP控除（ブースター対象外）
     setMathPoints(p => p - item.cost);
-    setOwnedShopItems(prev => new Set([...prev, item.id]));
     if (user && db) {
-      updateDoc(doc(db, 'users', user.uid), {
-        mathPoints: increment(-item.cost),
-      }).catch(() => {});
+      updateDoc(doc(db, 'users', user.uid), { mathPoints: increment(-item.cost) }).catch(() => {});
     }
-  }, [ownedShopItems, mathPoints, user]);
+
+    // アイテム効果適用
+    switch (item.type) {
+      case 'theme':
+        setOwnedShopItems(prev => new Set([...prev, item.id]));
+        break;
+      case 'streak_shield':
+        setHasStreakShield(true);
+        if (user && db) {
+          updateDoc(doc(db, 'users', user.uid), { hasStreakShield: true }).catch(() => {});
+        }
+        break;
+      case 'mp_booster': {
+        const expiresAt = Date.now() + (item.durationMs || 3600000);
+        setActiveBooster({ type: 'mp_booster', expiresAt, multiplier: 2 });
+        break;
+      }
+      case 'hint_token':
+        setHintTokens(prev => prev + 1);
+        break;
+      case 'exp_booster':
+        setExpBoosterActive(true);
+        break;
+    }
+  }, [ownedShopItems, mathPoints, user, hasStreakShield]);
 
   // 分野マスターバッジチェック
   const checkCategoryMasterBadges = useCallback(() => {
@@ -692,6 +799,80 @@ const App: React.FC = () => {
       earnBadge('all_master');
     }
   }, [earnBadge]);
+
+  // ============================
+  // 称号システム
+  // ============================
+  const earnTitle = useCallback((titleId: string) => {
+    setEarnedTitleIds(prev => {
+      if (prev.has(titleId)) return prev;
+      if (!TITLE_DEFS.find(t => t.id === titleId)) return prev;
+      if (user && db) {
+        updateDoc(doc(db, 'users', user.uid), { earnedTitleIds: arrayUnion(titleId) }).catch(() => {});
+      }
+      return new Set(prev).add(titleId);
+    });
+  }, [user]);
+
+  const checkTitleConditions = useCallback(() => {
+    TITLE_DEFS.filter(t => !t.isMonthly && !earnedTitleIdsRef.current.has(t.id))
+      .forEach(title => {
+        const { type, value = 0, badgeId } = title.condition;
+        const ok = type === 'any'
+          || (type === 'total_correct' && totalCorrectAnswers >= value)
+          || (type === 'total_wins' && totalWins >= value)
+          || (type === 'login_streak' && loginStreak >= value)
+          || (type === 'level' && playerLevel >= value)
+          || (type === 'badge_owned' && !!badgeId && earnedBadgeIds.has(badgeId));
+        if (ok) earnTitle(title.id);
+      });
+  }, [totalCorrectAnswers, totalWins, loginStreak, playerLevel, earnedBadgeIds, earnTitle]);
+
+  // 条件変化時に自動チェック
+  useEffect(() => {
+    checkTitleConditions();
+  }, [checkTitleConditions]);
+
+  const checkMonthlyChampion = useCallback(async () => {
+    if (!db || !user) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    try {
+      const snap = await getDoc(doc(db, 'config', `monthly_champion_${monthKey}`));
+      const isChampion = snap.exists() && snap.data()?.winnerUid === user.uid;
+      if (isChampion) {
+        earnTitle('title_monthly_champion');
+      } else {
+        if (equippedTitle === 'title_monthly_champion') setEquippedTitle(null);
+        setEarnedTitleIds(prev => { const n = new Set(prev); n.delete('title_monthly_champion'); return n; });
+      }
+    } catch {}
+  }, [user, equippedTitle, earnTitle]);
+
+  // ログイン時1回だけ月次チャンピオンチェック
+  useEffect(() => {
+    if (!user || loginStreak === 0 || hasCheckedMonthlyRef.current) return;
+    hasCheckedMonthlyRef.current = true;
+    checkMonthlyChampion();
+  }, [user, loginStreak, checkMonthlyChampion]);
+
+  // MPブースターのカウントダウン
+  useEffect(() => {
+    if (!activeBooster || activeBooster.type !== 'mp_booster') {
+      setMpBoosterSecondsLeft(0);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((activeBooster.expiresAt - Date.now()) / 1000));
+      setMpBoosterSecondsLeft(remaining);
+      if (remaining === 0) {
+        setActiveBooster(null);
+        localStorage.removeItem('bm_active_booster');
+      }
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [activeBooster]);
 
   const canAccessGameMaster = useMemo(() => {
     if (ADMIN_EMAILS.length === 0) return !!user;
@@ -718,8 +899,17 @@ const App: React.FC = () => {
   useEffect(() => { mathPointsRef.current = mathPoints; }, [mathPoints]);
   useEffect(() => { ownedCardIdsRef.current = ownedCardIds; }, [ownedCardIds]);
 
+  const expBoosterActiveRef = useRef(expBoosterActive);
+  useEffect(() => { expBoosterActiveRef.current = expBoosterActive; }, [expBoosterActive]);
+
   const addExp = useCallback((amount: number) => {
-    let currentExp = playerExpRef.current + amount;
+    // EXPブースター: バトル終了時に2倍、使用後自動解除
+    const expAmount = expBoosterActiveRef.current ? amount * 2 : amount;
+    if (expBoosterActiveRef.current) {
+      setExpBoosterActive(false);
+      localStorage.removeItem('bm_exp_booster');
+    }
+    let currentExp = playerExpRef.current + expAmount;
     let currentLevel = playerLevelRef.current;
     const oldLevel = currentLevel;
     let totalMpReward = 0;
@@ -737,14 +927,14 @@ const App: React.FC = () => {
       } else {
         totalMpReward += 500;
       }
-      setMathPoints(p => p + totalMpReward);
+      addMathPoints(totalMpReward);
       setLevelUpInfo({ oldLevel, newLevel: currentLevel, mpReward: totalMpReward, newCard });
       setPlayerLevel(currentLevel);
-      saveUserToFirestore({ playerLevel: currentLevel, mathPoints: mathPointsRef.current + totalMpReward });
+      saveUserToFirestore({ playerLevel: currentLevel });
     }
     setPlayerExp(currentExp);
     saveUserToFirestore({ playerExp: currentExp });
-  }, [expForNextLevel, saveUserToFirestore]);
+  }, [expForNextLevel, saveUserToFirestore, addMathPoints]);
 
   // ============================
   // Room / PvP watch
@@ -1145,7 +1335,7 @@ const App: React.FC = () => {
           const isWin = format === 'master_duel' ? opHPAfter <= 0 && myHPAfter > 0 : myWinsAfter >= reqWins;
           const isDraw = format === 'master_duel' ? myHPAfter <= 0 && opHPAfter <= 0 : false;
           setWinner(isDraw ? '引き分け' : isWin ? '勝利！' : '敗北...');
-          if (isWin) { addExp(500); setMathPoints(p => p + 300); }
+          if (isWin) { addExp(500); addMathPoints(300); setTotalWins(prev => prev + 1); }
           else { addExp(100); }
           handleQuestProgress('pvp_match');
           flushSessionData().catch(() => {});
@@ -1269,7 +1459,8 @@ const App: React.FC = () => {
         } else if (isWin) {
           setWinner('勝利！\nスピードデュエル制覇！');
           addExp(500);
-          setMathPoints(p => p + 300);
+          addMathPoints(300);
+          setTotalWins(prev => prev + 1);
           earnBadge('first_win');
         } else {
           setWinner('敗北...\n次こそ勝とう！');
@@ -1429,10 +1620,10 @@ const App: React.FC = () => {
           }
           if (isWinner && !isAbandoned) {
             addExp(500);
-            setMathPoints(p => p + 300);
+            addMathPoints(300);
+            setTotalWins(prev => prev + 1);
             saveUserToFirestore({ totalWins: increment(1), totalMatches: increment(1) });
             earnBadge('first_pvp_win');
-            // PvP10勝バッジチェックはサーバー側totalWinsで判断できないので省略
           } else if (!isAbandoned) {
             addExp(100);
             saveUserToFirestore({ totalMatches: increment(1) });
@@ -1908,7 +2099,8 @@ const App: React.FC = () => {
           const winDetail = battleFormat !== 'master_duel' ? `\n${newPlayerRoundWins}-${newPcRoundWins} (${formatLabel})` : '';
           setWinner(`勝利！\nおめでとう！${winDetail}`);
           addExp(500);
-          setMathPoints(p => p + 300);
+          addMathPoints(300);
+          setTotalWins(prev => prev + 1);
           saveUserToFirestore({ totalWins: increment(1), totalMatches: increment(1), [formatWinKey]: increment(1), [formatMatchKey]: increment(1) });
           if (gameMode === 'cpu') earnBadge('first_cpu_win');
           else earnBadge('first_pvp_win');
@@ -2036,14 +2228,19 @@ const App: React.FC = () => {
             srsReviewCount={getDueCount()}
             onOpenWeakness={() => setShowWeaknessPanel(true)}
             onOpenItemShop={() => setShowItemShop(true)}
-            equippedTitleName={equippedTitle ? SHOP_ITEMS.find(i => i.id === equippedTitle)?.name || null : null}
+            equippedTitleName={equippedTitle
+              ? (TITLE_DEFS.find(t => t.id === equippedTitle)?.name
+                || SHOP_ITEMS.find(i => i.id === equippedTitle)?.name
+                || null)
+              : null}
+            mpBoosterSecondsLeft={mpBoosterSecondsLeft}
           />
         );
 
       case 'practice_mode':
         return (
           <PracticeMode
-            onSessionComplete={pts => { setMathPoints(p => p + pts); setSrsReviewProblems(null); setGameState('main_menu'); }}
+            onSessionComplete={pts => { addMathPoints(pts); setSrsReviewProblems(null); setGameState('main_menu'); }}
             db={db}
             user={user}
             studentProfile={studentProfile}
@@ -2148,6 +2345,7 @@ const App: React.FC = () => {
               playerRoundWins={playerRoundWins}
               pcRoundWins={pcRoundWins}
               currentRound={currentRound}
+              battleTheme={equippedTheme}
             />
             {/* 相手切断通知バナー */}
             {opponentDisconnected && gameMode === 'pvp' && (
@@ -2162,6 +2360,11 @@ const App: React.FC = () => {
                         winnerId: isHost ? 'host' : 'guest',
                       }).catch(() => {});
                     }
+                    setWinner('勝利！');
+                    addExp(500);
+                    addMathPoints(300);
+                    setTotalWins(prev => prev + 1);
+                    setGameState('end');
                   }}
                   className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
                 >
@@ -2297,7 +2500,8 @@ const App: React.FC = () => {
                     }
                     setWinner('勝利！');
                     addExp(500);
-                    setMathPoints(p => p + 300);
+                    addMathPoints(300);
+                    setTotalWins(prev => prev + 1);
                     setGameState('end');
                   }}
                   className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
@@ -2386,7 +2590,25 @@ const App: React.FC = () => {
             onPurchase={handleShopPurchase}
             onEquipTitle={setEquippedTitle}
             onClose={() => setShowItemShop(false)}
+            earnedTitleIds={earnedTitleIds}
+            equippedTheme={equippedTheme}
+            onEquipTheme={setEquippedTheme}
+            hasStreakShield={hasStreakShield}
+            hintTokens={hintTokens}
+            activeBooster={activeBooster}
+            expBoosterActive={expBoosterActive}
           />
+        )}
+        {/* ストリークシールド発動トースト */}
+        {shieldUsedThisSession && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-blue-900/90 border border-blue-400 rounded-xl px-6 py-3 flex items-center gap-3 shadow-2xl animate-math-fade-in">
+            <span className="text-2xl">🛡️</span>
+            <div>
+              <p className="text-blue-200 text-sm font-bold">ストリークシールド発動！</p>
+              <p className="text-blue-400 text-xs">ログイン連続記録を守りました</p>
+            </div>
+            <button onClick={() => setShieldUsedThisSession(false)} className="text-blue-400 hover:text-white text-lg ml-2">✕</button>
+          </div>
         )}
       </div>
     </main>

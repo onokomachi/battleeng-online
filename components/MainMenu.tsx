@@ -25,6 +25,7 @@ interface MainMenuProps {
   onOpenWeakness?: () => void;
   onOpenItemShop?: () => void;
   equippedTitleName?: string | null;
+  mpBoosterSecondsLeft?: number;
 }
 
 // ── Letter badge icons (B / P / S) ─────────────────────────────────────────
@@ -337,9 +338,18 @@ const MainMenu: React.FC<MainMenuProps> = ({
   canAccessGameMaster, onOpenGameMaster,
   dailyQuestDefs, dailyQuestProgress, dailyQuestDone,
   onOpenClassBattle, hasStudentProfile, srsReviewCount,
-  onOpenWeakness, onOpenItemShop, equippedTitleName,
+  onOpenWeakness, onOpenItemShop, equippedTitleName, mpBoosterSecondsLeft,
 }) => (
   <div className="w-full h-full flex flex-col overflow-hidden">
+    {/* MPブースターカウントダウンバナー */}
+    {mpBoosterSecondsLeft != null && mpBoosterSecondsLeft > 0 && (
+      <div className="bg-amber-900/80 border-b border-amber-500/40 px-4 py-1.5 flex items-center justify-center gap-2 flex-shrink-0">
+        <span className="text-amber-300 text-xs font-bold">⚡ 2倍MPブースター発動中</span>
+        <span className="text-amber-200 text-xs font-mono">
+          {Math.floor(mpBoosterSecondsLeft / 60)}:{String(mpBoosterSecondsLeft % 60).padStart(2, '0')}
+        </span>
+      </div>
+    )}
     <TopBar
       user={user} mathPoints={mathPoints} loginStreak={loginStreak}
       onLogout={onLogout} onOpenLoginBonus={onOpenLoginBonus}
