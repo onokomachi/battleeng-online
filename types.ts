@@ -51,11 +51,12 @@ export type EnglishCategory =
 
 // --- Student Profile (学校・学年・組・番号) ---
 export interface StudentProfile {
-  school: string;   // 学校名 (e.g. "第三中学校")
-  grade: number;    // 学年 (1, 2, 3)
-  classNum: number; // 組 (1〜10)
-  number: number;   // 出席番号 (1〜45)
+  school: string;      // 学校名 (e.g. "第三中学校")
+  grade: number;       // 学年 (1, 2, 3; 4=卒業生)
+  classNum: number;    // 組 (1〜10)
+  number: number;      // 出席番号 (1〜45)
   displayLabel: string; // e.g. "第三中 2年3組12番"
+  schoolYear: number;  // 登録年度 (e.g. 2025) — 新年度確認済みフラグ兼用
 }
 
 // --- Auth / Online Types ---
