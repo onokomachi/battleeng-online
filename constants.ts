@@ -42,6 +42,21 @@ export const ISESAKI_SCHOOLS: { name: string; short: string }[] = [
 
 export const DEFAULT_SCHOOL = '第三中学校';
 
+// ── 年度管理 ──────────────────────────────────────────────────────────────
+/** 既存ユーザーのデフォルト年度（初回マイグレーション用） */
+export const DEFAULT_SCHOOL_YEAR = 2025;
+
+/**
+ * 現在の学年度を返す（日本の4月始まり）
+ * 4月以降: 当年, 1〜3月: 前年
+ * e.g. 2026-03 → 2025, 2026-04 → 2026
+ */
+export const getCurrentSchoolYear = (): number => {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1〜12
+  return month >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
 // Admin settings
 export const ADMIN_EMAILS: string[] = []; // Add admin email addresses here
 export const GAMEMASTER_PASSWORD = '215124'; // Change in production

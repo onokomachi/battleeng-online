@@ -12,7 +12,7 @@ import React, { useEffect, useState } from 'react';
 import {
   collection, getDocs, doc, getDoc, setDoc, query, where, type Firestore,
 } from 'firebase/firestore';
-import { ISESAKI_SCHOOLS } from '../constants';
+import { ISESAKI_SCHOOLS, getCurrentSchoolYear } from '../constants';
 
 interface SchoolStats {
   school: string;
@@ -77,6 +77,9 @@ const ClassBattleBoard: React.FC<ClassBattleBoardProps> = ({ db, onClose, curren
           query(collection(db, 'users'), where('studentProfile', '!=', null))
         );
 
+        // ランキング集計対象の年度（4月始まり）
+        const currentSchoolYear = getCurrentSchoolYear();
+
         // 学校マップ初期化（全12校を含める）
         const schoolMap = new Map<string, {
           members: number; active: number;
@@ -92,6 +95,10 @@ const ClassBattleBoard: React.FC<ClassBattleBoardProps> = ({ db, onClose, curren
           if (!sp?.school) return;
           // 既知の学校のみ集計（未設定・旧データは除外）
           if (!schoolMap.has(sp.school)) return;
+          // 新年度未更新ユーザーを除外（schoolYear が古い = プロンプト未対応）
+          if ((sp.schoolYear ?? 0) < currentSchoolYear) return;
+          // 卒業生（grade > 3）を除外
+          if ((sp.grade ?? 1) > 3) return;
 
           const entry = schoolMap.get(sp.school)!;
           entry.members++;
