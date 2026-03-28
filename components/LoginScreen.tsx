@@ -326,7 +326,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     </div>
 
                     <button
-                      onClick={onLogin}
+                      onClick={onGuestPlay}
                       className="w-full py-4 rounded-xl font-black tracking-[0.4em] uppercase text-sm relative overflow-hidden group"
                       style={{
                         background: 'linear-gradient(135deg, rgba(12,74,110,0.8), rgba(3,105,161,0.6))',
