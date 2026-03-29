@@ -14,6 +14,7 @@ import {
   doc, updateDoc, deleteDoc, limit, getDoc, setDoc
 } from 'firebase/firestore';
 import type { Room, StudentProfile } from '../types';
+import { ISESAKI_SCHOOLS } from '../constants';
 
 // ---- Types ----
 interface UserData {
@@ -71,6 +72,7 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
   const [userSearch, setUserSearch] = useState('');
 
   // Class management state
+  const [selectedSchool, setSelectedSchool] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<number>(1);
   const [selectedClassNum, setSelectedClassNum] = useState<number>(1);
   const [classDetailUser, setClassDetailUser] = useState<UserData | null>(null);
@@ -137,13 +139,16 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
   }, [users, userSearch]);
 
   // --- Class-based data ---
-  // 学年・組で生徒をグループ化
+  // 学校・学年・組で生徒をグループ化
   const classStudents = useMemo(() => {
     return users.filter(u => {
       const sp = u.studentProfile;
-      return sp && sp.grade === selectedGrade && sp.classNum === selectedClassNum;
+      if (!sp) return false;
+      if (sp.grade !== selectedGrade || sp.classNum !== selectedClassNum) return false;
+      if (selectedSchool !== 'all' && sp.school !== selectedSchool) return false;
+      return true;
     }).sort((a, b) => (a.studentProfile?.number || 0) - (b.studentProfile?.number || 0));
-  }, [users, selectedGrade, selectedClassNum]);
+  }, [users, selectedGrade, selectedClassNum, selectedSchool]);
 
   // クラス全体の統計
   const classStats = useMemo(() => {
@@ -162,17 +167,18 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
     return { totalStudents, avgLevel, totalCorrect, totalMatches, totalWins, avgMP, activeLast7d };
   }, [classStudents]);
 
-  // 全学年・全組に存在する生徒数のサマリー
+  // 全学年・全組に存在する生徒数のサマリー（選択学校でフィルタ）
   const gradeClassSummary = useMemo(() => {
     const summary: Record<number, Record<number, number>> = {};
     users.forEach(u => {
       const sp = u.studentProfile;
       if (!sp) return;
+      if (selectedSchool !== 'all' && sp.school !== selectedSchool) return;
       if (!summary[sp.grade]) summary[sp.grade] = {};
       summary[sp.grade][sp.classNum] = (summary[sp.grade][sp.classNum] || 0) + 1;
     });
     return summary;
-  }, [users]);
+  }, [users, selectedSchool]);
 
   // --- User Actions ---
   const handleResetUserStats = async (userId: string, name: string) => {
@@ -301,59 +307,99 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-grow overflow-hidden p-6">
+      <div className="flex-grow overflow-y-auto p-6">
 
         {/* ===== CLASS MANAGEMENT TAB ===== */}
         {activeTab === 'class' && (
-          <div className="h-full flex flex-col gap-4 overflow-hidden">
+          <div className="flex flex-col gap-4">
             {/* Class selector */}
             <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-              <div className="flex items-center gap-6 flex-wrap">
-                {/* Grade selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-purple-400 font-bold tracking-widest">学年:</span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3].map(g => (
-                      <button
-                        key={g}
-                        onClick={() => setSelectedGrade(g)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                          selectedGrade === g
-                            ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.3)]'
-                            : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'
-                        }`}
-                      >
-                        {g}年
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Class selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-purple-400 font-bold tracking-widest">組:</span>
+              <div className="flex flex-col gap-3">
+                {/* School selector */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-purple-400 font-bold tracking-widest w-8">学校:</span>
                   <div className="flex gap-1 flex-wrap">
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map(c => {
-                      const count = gradeClassSummary[selectedGrade]?.[c] || 0;
+                    <button
+                      onClick={() => setSelectedSchool('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        selectedSchool === 'all'
+                          ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.3)]'
+                          : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'
+                      }`}
+                    >
+                      全校
+                    </button>
+                    {ISESAKI_SCHOOLS.map(s => {
+                      const schoolCount = users.filter(u => u.studentProfile?.school === s.name).length;
                       return (
                         <button
-                          key={c}
-                          onClick={() => setSelectedClassNum(c)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all relative ${
-                            selectedClassNum === c
+                          key={s.name}
+                          onClick={() => setSelectedSchool(s.name)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all relative ${
+                            selectedSchool === s.name
                               ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.3)]'
                               : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'
                           }`}
                         >
-                          {c}組
-                          {count > 0 && (
+                          {s.short}
+                          {schoolCount > 0 && (
                             <span className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-mono">
-                              {count}
+                              {schoolCount > 9 ? '9+' : schoolCount}
                             </span>
                           )}
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 flex-wrap">
+                  {/* Grade selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-purple-400 font-bold tracking-widest">学年:</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3].map(g => (
+                        <button
+                          key={g}
+                          onClick={() => setSelectedGrade(g)}
+                          className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                            selectedGrade === g
+                              ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.3)]'
+                              : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'
+                          }`}
+                        >
+                          {g}年
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Class selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-purple-400 font-bold tracking-widest">組:</span>
+                    <div className="flex gap-1 flex-wrap">
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map(c => {
+                        const count = gradeClassSummary[selectedGrade]?.[c] || 0;
+                        return (
+                          <button
+                            key={c}
+                            onClick={() => setSelectedClassNum(c)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all relative ${
+                              selectedClassNum === c
+                                ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.3)]'
+                                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-white'
+                            }`}
+                          >
+                            {c}組
+                            {count > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-mono">
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -452,13 +498,13 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
             )}
 
             {/* Student list */}
-            <div className="flex-grow bg-gray-900 rounded-xl border border-gray-800 overflow-hidden flex flex-col">
+            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden flex flex-col">
               <div className="p-4 border-b border-gray-800 flex items-center justify-between">
                 <h2 className="font-bold text-purple-400">
-                  {selectedGrade}年{selectedClassNum}組 ({classStudents.length}名)
+                  {selectedSchool !== 'all' ? `${ISESAKI_SCHOOLS.find(s => s.name === selectedSchool)?.short} ` : ''}{selectedGrade}年{selectedClassNum}組 ({classStudents.length}名)
                 </h2>
               </div>
-              <div className="flex-grow overflow-auto">
+              <div className="overflow-auto">
                 {classStudents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     <p className="text-4xl mb-3 opacity-30">&#128203;</p>
@@ -757,7 +803,7 @@ const GameMaster: React.FC<GameMasterProps> = ({ db, onClose }) => {
 
         {/* ===== CONFIG TAB ===== */}
         {activeTab === 'config' && configDraft && (
-          <div className="max-w-2xl space-y-6">
+          <div className="max-w-2xl space-y-6 overflow-y-auto">
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
               <h3 className="font-bold text-red-400 text-lg">ゲーム設定</h3>
 
